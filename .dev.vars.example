@@ -1,0 +1,4 @@
+# Optional. Local development runs without any third-party credentials.
+# Private production bindings belong in an ignored wrangler.production.jsonc.
+# GA4_ID=
+# CLARITY_ID=

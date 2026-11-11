@@ -1,0 +1,10 @@
+# Rift Dive
+
+> An unofficial, fan-made daily League of Legends trivia game.
+
+Play: https://riftdive.gg/
+Source: https://github.com/OWNER/riftdive
+
+Seven prompts, 25 seconds each. Rarer answers score up to 100 points; each point is 10 metres of depth. Free to play, no accounts.
+
+Not endorsed by Riot Games. League of Legends is a trademark of Riot Games, Inc.
