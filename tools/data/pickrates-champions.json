@@ -1,0 +1,874 @@
+{
+ "meta": {
+  "source": "riftpatchnotes.com/lol/winrates (default view)",
+  "note": "share = champion appearances as % of all games (x10 players/game => roughly pick rate)",
+  "fetched": "2026-11-11"
+ },
+ "champions": {
+  "olaf": {
+   "games": 14166,
+   "share": 4.66,
+   "banRate": 5.82
+  },
+  "talon": {
+   "games": 25008,
+   "share": 8.226,
+   "banRate": 16.57
+  },
+  "jhin": {
+   "games": 64031,
+   "share": 21.062,
+   "banRate": 3.41
+  },
+  "pantheon": {
+   "games": 28970,
+   "share": 9.529,
+   "banRate": 3.63
+  },
+  "jax": {
+   "games": 20978,
+   "share": 6.9,
+   "banRate": 13.58
+  },
+  "evelynn": {
+   "games": 9305,
+   "share": 3.061,
+   "banRate": 2.12
+  },
+  "twisted-fate": {
+   "games": 21591,
+   "share": 7.102,
+   "banRate": 2.91
+  },
+  "ashe": {
+   "games": 16921,
+   "share": 5.566,
+   "banRate": 1.24
+  },
+  "seraphine": {
+   "games": 18938,
+   "share": 6.229,
+   "banRate": 2.87
+  },
+  "renekton": {
+   "games": 20302,
+   "share": 6.678,
+   "banRate": 5.03
+  },
+  "jarvan-iv": {
+   "games": 28777,
+   "share": 9.466,
+   "banRate": 2.16
+  },
+  "ekko": {
+   "games": 31303,
+   "share": 10.297,
+   "banRate": 3.53
+  },
+  "darius": {
+   "games": 21872,
+   "share": 7.195,
+   "banRate": 11.24
+  },
+  "volibear": {
+   "games": 11272,
+   "share": 3.708,
+   "banRate": 1.03
+  },
+  "katarina": {
+   "games": 20378,
+   "share": 6.703,
+   "banRate": 12.56
+  },
+  "varus": {
+   "games": 13165,
+   "share": 4.33,
+   "banRate": 1
+  },
+  "lulu": {
+   "games": 41464,
+   "share": 13.639,
+   "banRate": 16.91
+  },
+  "teemo": {
+   "games": 12133,
+   "share": 3.991,
+   "banRate": 4.18
+  },
+  "nidalee": {
+   "games": 12713,
+   "share": 4.182,
+   "banRate": 6.03
+  },
+  "tristana": {
+   "games": 21514,
+   "share": 7.077,
+   "banRate": 7.11
+  },
+  "dr-mundo": {
+   "games": 12750,
+   "share": 4.194,
+   "banRate": 1.71
+  },
+  "viego": {
+   "games": 22071,
+   "share": 7.26,
+   "banRate": 4
+  },
+  "locke": {
+   "games": 22108,
+   "share": 7.272,
+   "banRate": 39.23
+  },
+  "ezreal": {
+   "games": 47384,
+   "share": 15.586,
+   "banRate": 4.56
+  },
+  "tahm-kench": {
+   "games": 9407,
+   "share": 3.094,
+   "banRate": 1.06
+  },
+  "kaisa": {
+   "games": 72055,
+   "share": 23.702,
+   "banRate": 4.43
+  },
+  "leblanc": {
+   "games": 20380,
+   "share": 6.704,
+   "banRate": 28.47
+  },
+  "elise": {
+   "games": 15122,
+   "share": 4.974,
+   "banRate": 3.63
+  },
+  "morgana": {
+   "games": 10091,
+   "share": 3.319,
+   "banRate": 7.13
+  },
+  "fizz": {
+   "games": 12613,
+   "share": 4.149,
+   "banRate": 3.92
+  },
+  "gragas": {
+   "games": 11565,
+   "share": 3.804,
+   "banRate": 0.54
+  },
+  "vi": {
+   "games": 16181,
+   "share": 5.323,
+   "banRate": 1.85
+  },
+  "ahri": {
+   "games": 34722,
+   "share": 11.421,
+   "banRate": 3.07
+  },
+  "nautilus": {
+   "games": 42481,
+   "share": 13.974,
+   "banRate": 16.24
+  },
+  "sett": {
+   "games": 12944,
+   "share": 4.258,
+   "banRate": 1.35
+  },
+  "zaahen": {
+   "games": 15310,
+   "share": 5.036,
+   "banRate": 0.92
+  },
+  "taliyah": {
+   "games": 25262,
+   "share": 8.31,
+   "banRate": 2.33
+  },
+  "yunara": {
+   "games": 40628,
+   "share": 13.364,
+   "banRate": 6.59
+  },
+  "lux": {
+   "games": 21918,
+   "share": 7.21,
+   "banRate": 1.12
+  },
+  "miss-fortune": {
+   "games": 19949,
+   "share": 6.562,
+   "banRate": 0.92
+  },
+  "karma": {
+   "games": 26161,
+   "share": 8.605,
+   "banRate": 3.07
+  },
+  "brand": {
+   "games": 7400,
+   "share": 2.434,
+   "banRate": 0.81
+  },
+  "hwei": {
+   "games": 17455,
+   "share": 5.742,
+   "banRate": 2.2
+  },
+  "illaoi": {
+   "games": 6463,
+   "share": 2.126,
+   "banRate": 3.16
+  },
+  "diana": {
+   "games": 18231,
+   "share": 5.997,
+   "banRate": 2.15
+  },
+  "akshan": {
+   "games": 9444,
+   "share": 3.107,
+   "banRate": 3.14
+  },
+  "naafiri": {
+   "games": 18322,
+   "share": 6.027,
+   "banRate": 9.18
+  },
+  "tryndamere": {
+   "games": 9202,
+   "share": 3.027,
+   "banRate": 2.79
+  },
+  "yone": {
+   "games": 46714,
+   "share": 15.366,
+   "banRate": 15.52
+  },
+  "shen": {
+   "games": 14991,
+   "share": 4.931,
+   "banRate": 0.75
+  },
+  "master-yi": {
+   "games": 15052,
+   "share": 4.951,
+   "banRate": 11.01
+  },
+  "zilean": {
+   "games": 10585,
+   "share": 3.482,
+   "banRate": 2.29
+  },
+  "yasuo": {
+   "games": 35185,
+   "share": 11.574,
+   "banRate": 28.53
+  },
+  "sivir": {
+   "games": 13098,
+   "share": 4.308,
+   "banRate": 1.84
+  },
+  "zyra": {
+   "games": 15369,
+   "share": 5.055,
+   "banRate": 7.17
+  },
+  "ambessa": {
+   "games": 21596,
+   "share": 7.104,
+   "banRate": 5.77
+  },
+  "kalista": {
+   "games": 17248,
+   "share": 5.674,
+   "banRate": 4.3
+  },
+  "sion": {
+   "games": 18004,
+   "share": 5.922,
+   "banRate": 0.78
+  },
+  "lucian": {
+   "games": 27461,
+   "share": 9.033,
+   "banRate": 2.96
+  },
+  "fiddlesticks": {
+   "games": 8055,
+   "share": 2.65,
+   "banRate": 1.1
+  },
+  "riven": {
+   "games": 9748,
+   "share": 3.207,
+   "banRate": 2.32
+  },
+  "sylas": {
+   "games": 50785,
+   "share": 16.705,
+   "banRate": 21.58
+  },
+  "heimerdinger": {
+   "games": 5316,
+   "share": 1.749,
+   "banRate": 1.37
+  },
+  "camille": {
+   "games": 21192,
+   "share": 6.971,
+   "banRate": 2.35
+  },
+  "galio": {
+   "games": 21620,
+   "share": 7.112,
+   "banRate": 2.82
+  },
+  "pyke": {
+   "games": 17055,
+   "share": 5.61,
+   "banRate": 39.63
+  },
+  "syndra": {
+   "games": 36767,
+   "share": 12.094,
+   "banRate": 13.29
+  },
+  "soraka": {
+   "games": 12476,
+   "share": 4.104,
+   "banRate": 1.33
+  },
+  "aatrox": {
+   "games": 20051,
+   "share": 6.596,
+   "banRate": 4.68
+  },
+  "vladimir": {
+   "games": 16210,
+   "share": 5.332,
+   "banRate": 4.63
+  },
+  "caitlyn": {
+   "games": 27550,
+   "share": 9.062,
+   "banRate": 15.45
+  },
+  "malphite": {
+   "games": 22983,
+   "share": 7.56,
+   "banRate": 16.19
+  },
+  "ksante": {
+   "games": 17430,
+   "share": 5.733,
+   "banRate": 3.07
+  },
+  "orianna": {
+   "games": 20679,
+   "share": 6.802,
+   "banRate": 1.06
+  },
+  "qiyana": {
+   "games": 34028,
+   "share": 11.193,
+   "banRate": 31.09
+  },
+  "anivia": {
+   "games": 13110,
+   "share": 4.312,
+   "banRate": 3.17
+  },
+  "velkoz": {
+   "games": 16378,
+   "share": 5.387,
+   "banRate": 1.72
+  },
+  "kayn": {
+   "games": 14163,
+   "share": 4.659,
+   "banRate": 2.31
+  },
+  "draven": {
+   "games": 14376,
+   "share": 4.729,
+   "banRate": 24.55
+  },
+  "yorick": {
+   "games": 6990,
+   "share": 2.299,
+   "banRate": 4.26
+  },
+  "garen": {
+   "games": 16853,
+   "share": 5.544,
+   "banRate": 3.48
+  },
+  "lissandra": {
+   "games": 17184,
+   "share": 5.652,
+   "banRate": 2.75
+  },
+  "aurora": {
+   "games": 13120,
+   "share": 4.316,
+   "banRate": 1.32
+  },
+  "urgot": {
+   "games": 7056,
+   "share": 2.321,
+   "banRate": 0.75
+  },
+  "lee-sin": {
+   "games": 45235,
+   "share": 14.88,
+   "banRate": 22.99
+  },
+  "zoe": {
+   "games": 13082,
+   "share": 4.303,
+   "banRate": 5.15
+  },
+  "samira": {
+   "games": 7528,
+   "share": 2.476,
+   "banRate": 1.9
+  },
+  "zed": {
+   "games": 29891,
+   "share": 9.832,
+   "banRate": 21.04
+  },
+  "aphelios": {
+   "games": 23231,
+   "share": 7.642,
+   "banRate": 3.95
+  },
+  "gangplank": {
+   "games": 16583,
+   "share": 5.455,
+   "banRate": 12.34
+  },
+  "kogmaw": {
+   "games": 10711,
+   "share": 3.523,
+   "banRate": 0.7
+  },
+  "graves": {
+   "games": 23072,
+   "share": 7.589,
+   "banRate": 9.37
+  },
+  "twitch": {
+   "games": 13508,
+   "share": 4.443,
+   "banRate": 6.06
+  },
+  "vayne": {
+   "games": 11291,
+   "share": 3.714,
+   "banRate": 2.87
+  },
+  "wukong": {
+   "games": 22823,
+   "share": 7.507,
+   "banRate": 5.66
+  },
+  "annie": {
+   "games": 7080,
+   "share": 2.329,
+   "banRate": 0.44
+  },
+  "malzahar": {
+   "games": 11004,
+   "share": 3.62,
+   "banRate": 3.53
+  },
+  "nasus": {
+   "games": 9753,
+   "share": 3.208,
+   "banRate": 6.49
+  },
+  "zeri": {
+   "games": 18826,
+   "share": 6.193,
+   "banRate": 1.28
+  },
+  "mordekaiser": {
+   "games": 12307,
+   "share": 4.048,
+   "banRate": 3.67
+  },
+  "smolder": {
+   "games": 12343,
+   "share": 4.06,
+   "banRate": 0.75
+  },
+  "chogath": {
+   "games": 21373,
+   "share": 7.03,
+   "banRate": 5.27
+  },
+  "cassiopeia": {
+   "games": 9947,
+   "share": 3.272,
+   "banRate": 2.01
+  },
+  "maokai": {
+   "games": 11469,
+   "share": 3.773,
+   "banRate": 0.18
+  },
+  "xin-zhao": {
+   "games": 12685,
+   "share": 4.173,
+   "banRate": 0.78
+  },
+  "swain": {
+   "games": 14861,
+   "share": 4.888,
+   "banRate": 1.18
+  },
+  "alistar": {
+   "games": 27327,
+   "share": 8.989,
+   "banRate": 3.72
+  },
+  "fiora": {
+   "games": 15225,
+   "share": 5.008,
+   "banRate": 9.94
+  },
+  "trundle": {
+   "games": 6325,
+   "share": 2.081,
+   "banRate": 0.29
+  },
+  "warwick": {
+   "games": 10108,
+   "share": 3.325,
+   "banRate": 0.66
+  },
+  "akali": {
+   "games": 35941,
+   "share": 11.822,
+   "banRate": 20.4
+  },
+  "viktor": {
+   "games": 29050,
+   "share": 9.556,
+   "banRate": 10.62
+  },
+  "rumble": {
+   "games": 8536,
+   "share": 2.808,
+   "banRate": 1.09
+  },
+  "jayce": {
+   "games": 36113,
+   "share": 11.879,
+   "banRate": 14.39
+  },
+  "kennen": {
+   "games": 8742,
+   "share": 2.876,
+   "banRate": 1.61
+  },
+  "mel": {
+   "games": 8485,
+   "share": 2.791,
+   "banRate": 4.21
+  },
+  "corki": {
+   "games": 19945,
+   "share": 6.561,
+   "banRate": 0.79
+  },
+  "gwen": {
+   "games": 11674,
+   "share": 3.84,
+   "banRate": 2.75
+  },
+  "shyvana": {
+   "games": 10122,
+   "share": 3.33,
+   "banRate": 3.22
+  },
+  "karthus": {
+   "games": 8365,
+   "share": 2.752,
+   "banRate": 1.85
+  },
+  "irelia": {
+   "games": 22649,
+   "share": 7.45,
+   "banRate": 16.66
+  },
+  "nunu-willump": {
+   "games": 9343,
+   "share": 3.073,
+   "banRate": 0.85
+  },
+  "nocturne": {
+   "games": 9742,
+   "share": 3.205,
+   "banRate": 5.24
+  },
+  "sejuani": {
+   "games": 6415,
+   "share": 2.11,
+   "banRate": 0.1
+  },
+  "neeko": {
+   "games": 8518,
+   "share": 2.802,
+   "banRate": 1.06
+  },
+  "veigar": {
+   "games": 9868,
+   "share": 3.246,
+   "banRate": 0.4
+  },
+  "quinn": {
+   "games": 5847,
+   "share": 1.923,
+   "banRate": 0.45
+  },
+  "vex": {
+   "games": 8611,
+   "share": 2.832,
+   "banRate": 3.68
+  },
+  "shaco": {
+   "games": 14414,
+   "share": 4.741,
+   "banRate": 15.2
+  },
+  "zac": {
+   "games": 11570,
+   "share": 3.806,
+   "banRate": 1.09
+  },
+  "udyr": {
+   "games": 7531,
+   "share": 2.477,
+   "banRate": 0.99
+  },
+  "briar": {
+   "games": 9972,
+   "share": 3.28,
+   "banRate": 4.15
+  },
+  "ziggs": {
+   "games": 6068,
+   "share": 1.996,
+   "banRate": 0.58
+  },
+  "xerath": {
+   "games": 18369,
+   "share": 6.042,
+   "banRate": 3.72
+  },
+  "kled": {
+   "games": 6714,
+   "share": 2.209,
+   "banRate": 0.86
+  },
+  "ornn": {
+   "games": 13533,
+   "share": 4.452,
+   "banRate": 0.5
+  },
+  "kayle": {
+   "games": 10068,
+   "share": 3.312,
+   "banRate": 1.71
+  },
+  "aurelion-sol": {
+   "games": 8866,
+   "share": 2.916,
+   "banRate": 0.61
+  },
+  "gnar": {
+   "games": 13537,
+   "share": 4.453,
+   "banRate": 1.66
+  },
+  "kassadin": {
+   "games": 9723,
+   "share": 3.198,
+   "banRate": 3.19
+  },
+  "kindred": {
+   "games": 9695,
+   "share": 3.189,
+   "banRate": 2.44
+  },
+  "ryze": {
+   "games": 9395,
+   "share": 3.09,
+   "banRate": 0.44
+  },
+  "ivern": {
+   "games": 5150,
+   "share": 1.694,
+   "banRate": 0.48
+  },
+  "poppy": {
+   "games": 10472,
+   "share": 3.445,
+   "banRate": 5.97
+  },
+  "azir": {
+   "games": 5847,
+   "share": 1.923,
+   "banRate": 0.23
+  },
+  "singed": {
+   "games": 9325,
+   "share": 3.067,
+   "banRate": 0.88
+  },
+  "senna": {
+   "games": 18099,
+   "share": 5.953,
+   "banRate": 1.29
+  },
+  "reksai": {
+   "games": 7025,
+   "share": 2.311,
+   "banRate": 1.12
+  },
+  "rell": {
+   "games": 16735,
+   "share": 5.505,
+   "banRate": 1.78
+  },
+  "janna": {
+   "games": 15884,
+   "share": 5.225,
+   "banRate": 2.13
+  },
+  "hecarim": {
+   "games": 19561,
+   "share": 6.434,
+   "banRate": 13.34
+  },
+  "rammus": {
+   "games": 3539,
+   "share": 1.164,
+   "banRate": 1.45
+  },
+  "lillia": {
+   "games": 15409,
+   "share": 5.069,
+   "banRate": 5.74
+  },
+  "skarner": {
+   "games": 5134,
+   "share": 1.689,
+   "banRate": 0.28
+  },
+  "rengar": {
+   "games": 14245,
+   "share": 4.686,
+   "banRate": 12.75
+  },
+  "xayah": {
+   "games": 28722,
+   "share": 9.448,
+   "banRate": 5.06
+  },
+  "belveth": {
+   "games": 8723,
+   "share": 2.869,
+   "banRate": 5.92
+  },
+  "jinx": {
+   "games": 28304,
+   "share": 9.31,
+   "banRate": 4.32
+  },
+  "nilah": {
+   "games": 2807,
+   "share": 0.923,
+   "banRate": 1.02
+  },
+  "amumu": {
+   "games": 5869,
+   "share": 1.931,
+   "banRate": 0.41
+  },
+  "thresh": {
+   "games": 40621,
+   "share": 13.362,
+   "banRate": 14.78
+  },
+  "rakan": {
+   "games": 19050,
+   "share": 6.266,
+   "banRate": 0.62
+  },
+  "sona": {
+   "games": 9576,
+   "share": 3.15,
+   "banRate": 0.28
+  },
+  "braum": {
+   "games": 17412,
+   "share": 5.727,
+   "banRate": 9.46
+  },
+  "milio": {
+   "games": 15558,
+   "share": 5.118,
+   "banRate": 2.68
+  },
+  "nami": {
+   "games": 24363,
+   "share": 8.014,
+   "banRate": 0.7
+  },
+  "blitzcrank": {
+   "games": 25056,
+   "share": 8.242,
+   "banRate": 17.5
+  },
+  "leona": {
+   "games": 27792,
+   "share": 9.142,
+   "banRate": 7.76
+  },
+  "yuumi": {
+   "games": 17460,
+   "share": 5.743,
+   "banRate": 8.41
+  },
+  "bard": {
+   "games": 17280,
+   "share": 5.684,
+   "banRate": 3.33
+  },
+  "renata-glasc": {
+   "games": 8109,
+   "share": 2.667,
+   "banRate": 0.57
+  },
+  "taric": {
+   "games": 4157,
+   "share": 1.367,
+   "banRate": 0.21
+  },
+  "khazix": {
+   "games": 18881,
+   "share": 6.211,
+   "banRate": 5.42
+  }
+ }
+}
