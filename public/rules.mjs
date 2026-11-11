@@ -50,7 +50,7 @@ export function matchAnswer(input, answers) {
   if (candidates.length && (!candidates[1] || candidates[0].d < candidates[1].d || candidates[0].a.answer === candidates[1].a.answer)) return { ...candidates[0].a, correction: true };
   return null;
 }
-export function shareText(day, results) {
+export function shareText(day, results, link = 'https://riftdive.gg') {
   const score = results.reduce((s, r) => s + r.score, 0);
-  return `Rift Dive #${day} 🌊\n${score}/700 · ${score * 10}m\n${results.map(r => TIERS[r.tier]?.emoji || '⬛').join('')}\nhttps://riftdive.gg`;
+  return `Rift Dive #${day} 🌊\n${score}/700 · ${score * 10}m\n${results.map(r => TIERS[r.tier]?.emoji || '⬛').join('')}\n${link}`;
 }
