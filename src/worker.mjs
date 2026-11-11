@@ -1,7 +1,7 @@
 import { SITE } from './config.mjs';
 import { documents } from './docs.mjs';
 import { homePage, infoPage } from './html.mjs';
-import { promptsFor, dayNumber } from './content/bank.mjs';
+import { puzzleFromPool } from './content/pool.mjs';
 import { TIERS, normalize, matchAnswer, etDate, resetAt, ROUND_MS, PREVIEW_MS } from '../public/rules.mjs';
 
 const cache = new Map();
@@ -17,8 +17,9 @@ async function puzzleFor(env, date) {
   if (cache.has(date)) return cache.get(date);
   const row = await env.DB.prepare('SELECT content FROM puzzles WHERE date=?').bind(date).first();
   if (row) { const p = JSON.parse(row.content); cache.set(date, p); return p; }
-  // Prompts come from our own bank, deterministically per date. No external puzzle source is used.
-  const puzzle = { date, dayNumber: dayNumber(date), source: 'Rift Dive prompt bank', prompts: promptsFor(date) };
+  // Questions come from our own sharded bank (public/q), picked deterministically per date.
+  const getJson = async path => { const r = await env.ASSETS.fetch(new Request('https://assets.local/' + path)); if (!r.ok) throw new Error(path + ' ' + r.status); return r.json(); };
+  const puzzle = await puzzleFromPool(date, getJson);
   cache.set(date, puzzle);
   return puzzle;
 }

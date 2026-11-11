@@ -5,11 +5,14 @@ import { readFileSync } from 'node:fs';
 import worker from '../src/worker.mjs';
 import { DEMO } from '../src/demo.mjs';
 import { POOL, promptsFor } from '../src/content/bank.mjs';
+import { puzzleFromPool, pickIds, shardOf, TIER_KEYS, resetPoolCache } from '../src/content/pool.mjs';
 import { SITE } from '../src/config.mjs';
 import { documents } from '../src/docs.mjs';
 import { etDate, resetAt, normalize, matchAnswer, TIERS } from '../public/rules.mjs';
 import { homePage } from '../src/html.mjs';
 
+const assetFetch=async req=>{const p=new URL(req.url).pathname.slice(1);try{return new Response(readFileSync(new URL('../public/'+p,import.meta.url)),{status:200})}catch{return new Response('not found',{status:404})}};
+const getJson=async path=>JSON.parse(readFileSync(new URL('../public/'+path,import.meta.url),'utf8'));
 function database(){
   const db=new DatabaseSync(':memory:');
   db.exec(readFileSync(new URL('../migrations/0001_initial.sql',import.meta.url),'utf8'));
@@ -27,7 +30,7 @@ function database(){
   });
   return{prepare,async batch(statements){db.exec('BEGIN');try{const r=[];for(const s of statements)r.push(await s.run());db.exec('COMMIT');return r}catch(e){db.exec('ROLLBACK');throw e}},close:()=>db.close()};
 }
-function service(){const env={DB:database(),BUCKET:{put:async()=>{},get:async()=>null},LOCAL_DEVELOPMENT:'true',REFERENCE_SYNC:'false',ASSETS:{fetch:async()=>new Response('not found',{status:404})}};let cookie='';return{env,async call(path,data,extra={}){const r=await worker.fetch(new Request('http://localhost:3051'+path,{...(data===undefined?{}:{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'application/json','Cookie':cookie,...extra}}),...(data===undefined?{headers:{Cookie:cookie,...extra}}:{})}),env,{});if(r.headers.get('Set-Cookie'))cookie=r.headers.get('Set-Cookie').split(';')[0];return{status:r.status,body:await r.json()}},cookie:()=>cookie};}
+function service(){const env={DB:database(),BUCKET:{put:async()=>{},get:async()=>null},LOCAL_DEVELOPMENT:'true',REFERENCE_SYNC:'false',ASSETS:{fetch:assetFetch}};let cookie='';return{env,async call(path,data,extra={}){const r=await worker.fetch(new Request('http://localhost:3051'+path,{...(data===undefined?{}:{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'application/json','Cookie':cookie,...extra}}),...(data===undefined?{headers:{Cookie:cookie,...extra}}:{})}),env,{});if(r.headers.get('Set-Cookie'))cookie=r.headers.get('Set-Cookie').split(';')[0];return{status:r.status,body:await r.json()}},cookie:()=>cookie};}
 
 test('New York reset follows DST rather than device midnight',()=>{
   assert.equal(etDate(Date.parse('2026-10-17T03:59:59Z')),'2026-10-16');
@@ -54,7 +57,7 @@ test('answer matching normalizes accents, uses aliases and avoids short fuzzy gu
 });
 test('seven rounds are scored on server; retries cannot duplicate points; other browsers cannot read the run',async()=>{
   const s=service();let{body:game}=await s.call('/api/start',{});const id=game.runId;
-  const today=promptsFor(etDate());
+  const today=(await puzzleFromPool(etDate(),getJson)).prompts;
   const rejected=await s.call('/api/answer',{runId:id,round:0,answer:'zzzzzzzzzz'});assert.equal(rejected.body.rejected,true);
   for(let i=0;i<7;i++){
     const answer=today[i].answers.find(a=>a.tier==='krillion').answer;
@@ -95,4 +98,29 @@ test('home page is League-branded, has an expandable guide and the required Riot
 });
 test('docs are minimal, UTF-8 and not SPA HTML',async()=>{
   const s=service();for(const path of Object.keys(documents()))for(const method of ['GET','HEAD']){const r=await worker.fetch(new Request('http://localhost:3051'+path,{method}),s.env,{});assert.equal(r.status,200);assert.match(r.headers.get('Content-Type'),/text\/plain; charset=utf-8/);const body=await r.text();if(method==='HEAD')assert.equal(body,'');else{assert.ok(body.startsWith('# Rift Dive'));assert.ok(!body.includes('<!doctype html>'));}}s.env.DB.close();
+});
+
+test('question bank: index and shards agree, and every question is playable',async()=>{
+  const index=await getJson('q/index.json');assert.ok(index.n>=10000,'bank should hold at least 10,000 questions, has '+index.n);
+  assert.equal(index.q.length,index.n);const ids=new Set(index.q.map(r=>r[0]));assert.equal(ids.size,index.n);
+  const shards={};let checked=0;
+  for(const [id,cat] of index.q){const n=shardOf(id);shards[n]||=await getJson(`q/s${n}.json`);const q=shards[n][id];assert.ok(q,'missing '+id);assert.equal(q.c,cat);
+    assert.ok(q.a.length>=5,id);assert.ok(q.a.some(a=>a[1]===5),'no 100-point answer: '+id);assert.ok(q.a.every(a=>a[1]>=0&&a[1]<=5&&typeof a[0]==='string'),id);checked++;}
+  assert.equal(checked,index.n);
+});
+test('daily selection: deterministic, 7 distinct questions, no category twice in a row, varied across days',async()=>{
+  const index=await getJson('q/index.json');
+  const a=pickIds(index,'2026-11-10'),b=pickIds(index,'2026-11-10'),c=pickIds(index,'2026-11-11');
+  assert.deepEqual(a,b);assert.equal(new Set(a).size,7);assert.notDeepEqual(a,c);
+  const cat=Object.fromEntries(index.q.map(r=>[r[0],r[1]]));
+  const cats={};
+  for(let d=0;d<120;d++){const day=new Date(Date.UTC(2026,10,10+d)).toISOString().slice(0,10),ids=pickIds(index,day);
+    for(let i=1;i<ids.length;i++)assert.notEqual(cat[ids[i]],cat[ids[i-1]],day);
+    for(const id of ids)cats[cat[id]]=(cats[cat[id]]||0)+1;}
+  const total=Object.values(cats).reduce((x,y)=>x+y,0);assert.ok(cats['Pro Play']/total<0.45,'pro play should not dominate: '+JSON.stringify(cats));
+  assert.ok(Object.keys(cats).length>=5,JSON.stringify(cats));
+});
+test('puzzles load from the pool and fall back to the curated bank if it is unavailable',async()=>{
+  const p=await puzzleFromPool('2026-11-10',getJson);assert.equal(p.prompts.length,7);assert.ok(p.prompts.every(q=>q.answers.every(a=>TIER_KEYS.includes(a.tier))));
+  resetPoolCache();const f=await puzzleFromPool('2026-11-10',async()=>{throw new Error('offline')});resetPoolCache();assert.equal(f.prompts.length,7);assert.equal(f.source,'Rift Dive curated bank');
 });

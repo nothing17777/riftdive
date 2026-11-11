@@ -9,6 +9,7 @@ await rm('dist', { recursive: true, force: true });
 await mkdir('dist/content', { recursive: true });
 await cp('public', 'dist', { recursive: true });
 await cp('src/content/bank.mjs', 'dist/content/bank.mjs');
+await cp('src/content/pool.mjs', 'dist/content/pool.mjs');
 await cp('static/static-api.mjs', 'dist/static-api.mjs');
 await writeFile('dist/.nojekyll', '');
 

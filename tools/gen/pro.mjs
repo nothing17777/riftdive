@@ -57,20 +57,37 @@ export async function loadRows(rawDir) {
       else if (r[h.playername]) players.push({ ...base, pl: r[h.playername], pos: r[h.position], ch: r[h.champion] });
     }
   }
+  const spell = new Map();
+  for (const r of players) { const k = norm(r.pl); let m = spell.get(k); if (!m) spell.set(k, (m = new Map())); m.set(r.pl, (m.get(r.pl) || 0) + 1); }
+  const canon = new Map([...spell].map(([k, m]) => [k, [...m].sort((a, b) => b[1] - a[1])[0][0]]));
+  for (const r of players) r.pl = canon.get(norm(r.pl));
   return { players, teams, years };
 }
 
-export function generatePro({ players, teams, years }) {
+const LEAGUE_FACTOR = { LCK: 1, LPL: 1, LEC: 1, LCS: 1, 'NA LCS': 1, 'EU LCS': 1, WLDs: 1, MSI: 1, LMS: .5, CBLOL: .5, LLA: .5, LJL: .5, VCS: .5, TCL: .5, OPL: .5, LCL: .5, LDL: .2, CK: .2, 'NA CS': .2, 'EU CS': .2 };
+
+export function generatePro({ players, teams, years }, { fame = {} } = {}) {
   const minY = Math.min(...years), maxY = Math.max(...years);
   const ALL = maxY >= 2026 ? 'in pro play' : `in pro play between ${minY} and ${maxY}`;
   const out = [], stat = {};
+  const famed = new Map(Object.entries(fame).map(([k, v]) => [norm(k), v]));
+  const chFame = ch => famed.get(norm(ch)) ?? 15;
+  const plGames = new Map(), tmGames = new Map();
+  for (const r of players) { plGames.set(r.pl, (plGames.get(r.pl) || 0) + 1); tmGames.set(r.team, (tmGames.get(r.team) || 0) + 1); }
+  const maxPl = Math.max(...plGames.values()), maxTm = Math.max(...tmGames.values());
+  const plProm = pl => Math.log1p(plGames.get(pl) || 0) / Math.log1p(maxPl);
+  const tmProm = tm => Math.log1p(tmGames.get(tm) || 0) / Math.log1p(maxTm);
+  const yf = y => 0.6 + 0.4 * (y - minY) / Math.max(1, maxY - minY);
+  const LF = lg => LEAGUE_FACTOR[lg] ?? .3;
   const push = (family, q) => { if (q) { out.push(q); stat[family] = (stat[family] || 0) + 1; } };
-  const entries = m => [...m].map(([name, count]) => ({ name, count }));
-  const teamEntries = m => [...m].map(([name, count]) => ({ name, count, aliases: teamAliases(name) }));
+  const plE = m => [...m].map(([name, count]) => ({ name, count, glob: plGames.get(name) }));
+  const tmE = m => [...m].map(([name, count]) => ({ name, count, glob: tmGames.get(name), aliases: teamAliases(name) }));
+  const chE = m => [...m].map(([name, count]) => ({ name, count, glob: chFame(name) }));
   const split = sp => (sp ? ` ${sp}` : '');
   const idk = (...p) => p.map(x => norm(x) || 'x').join('.');
+  const C = 60; // champion answer sets above this are too easy to be interesting
 
-  const G = {}; // group name -> Map<key, Map<name,count>>
+  const G = {};
   const g = n => (G[n] ||= new Map());
   for (const r of players) {
     if (r.ch) {
@@ -86,24 +103,25 @@ export function generatePro({ players, teams, years }) {
     if (r.po) tally(g('tmPlayoffs'), r.lg + '|' + r.y + '|' + r.sp, r.team);
   }
   for (const r of teams) for (const b of r.bans) tally(g('banByLY'), r.lg + '|' + r.y, b);
+  const total = m => [...m.values()].reduce((s, x) => s + x, 0);
+  const Q = (family, o) => push(family, build({ category: CAT, ...o }));
 
-  const total = (m) => [...m.values()].reduce((s, x) => s + x, 0);
-  for (const [pl, m] of G.chByPl) if (total(m) >= 40) push('champions by player', build({ id: `pro.chbypl.${idk(pl)}`, category: CAT, subtype: 'champions-by-player', text: `Name a champion ${pl} has played ${ALL}`, entries: entries(m) }));
-  for (const [k, m] of G.chByPlY) { const [pl, y] = k.split('|'); if (total(m) >= 25) push('champions by player and year', build({ id: `pro.chbyply.${idk(pl, y)}`, category: CAT, subtype: 'champions-by-player-year', text: `Name a champion ${pl} played in ${y}`, entries: entries(m) })); }
-  for (const [ch, m] of G.plByCh) push('players by champion', build({ id: `pro.plbych.${idk(ch)}`, category: CAT, subtype: 'players-by-champion', text: `Name a player who has played ${ch} ${ALL}`, entries: entries(m), min: 10 }));
-  for (const [k, m] of G.plByChY) { const [ch, y] = k.split('|'); push('players by champion and year', build({ id: `pro.plbychy.${idk(ch, y)}`, category: CAT, subtype: 'players-by-champion-year', text: `Name a player who played ${ch} in ${y}`, entries: entries(m), min: 10 })); }
-  for (const [k, m] of G.plByChLY) { const [ch, lg, y] = k.split('|'); push('players by champion, league and year', build({ id: `pro.plbychly.${idk(ch, lg, y)}`, category: CAT, subtype: 'players-by-champion-league-year', text: `Name a player who played ${ch} ${PLACE[lg]} in ${y}`, entries: entries(m), min: 10 })); }
-  for (const [k, m] of G.tmByChY) { const [ch, y] = k.split('|'); push('teams by champion and year', build({ id: `pro.tmbychy.${idk(ch, y)}`, category: CAT, subtype: 'teams-by-champion-year', text: `Name a team that played ${ch} in ${y}`, entries: teamEntries(m), min: 10 })); }
-  for (const [ch, m] of G.tmByCh) push('teams by champion', build({ id: `pro.tmbych.${idk(ch)}`, category: CAT, subtype: 'teams-by-champion', text: `Name a team that has played ${ch} ${ALL}`, entries: teamEntries(m), min: 10 }));
-  for (const [tm, m] of G.plByTm) if (total(m) >= 40) push('players by team', build({ id: `pro.plbytm.${idk(tm)}`, category: CAT, subtype: 'players-by-team', text: `Name a player who has played for ${tm} ${ALL}`, entries: entries(m) }));
-  for (const [k, m] of G.plByTmY) { const [tm, y] = k.split('|'); push('players by team and year', build({ id: `pro.plbytmy.${idk(tm, y)}`, category: CAT, subtype: 'players-by-team-year', text: `Name a player who played for ${tm} in ${y}`, entries: entries(m), min: 6 })); }
-  for (const [k, m] of G.tmByLYS) { const [lg, y, sp] = k.split('|'); push('teams by league, year and split', build({ id: `pro.tmbylys.${idk(lg, y, sp)}`, category: CAT, subtype: 'teams-by-league-split', text: `Name a team that played ${PLACE[lg]} in${split(sp)} ${y}`, entries: teamEntries(m), min: 6 })); }
-  for (const [k, m] of G.tmPlayoffs) { const [lg, y, sp] = k.split('|'); push('playoff teams', build({ id: `pro.tmpo.${idk(lg, y, sp)}`, category: CAT, subtype: 'playoff-teams', text: `Name a team that played in the playoffs ${PLACE[lg]} in${split(sp)} ${y}`, entries: teamEntries(m), min: 6 })); }
-  for (const [k, m] of G.plByLYP) { const [lg, y, pos] = k.split('|'); push('players by league, year and role', build({ id: `pro.plbylyp.${idk(lg, y, pos)}`, category: CAT, subtype: 'players-by-role', text: `Name a ${POS[pos]} who played ${PLACE[lg]} in ${y}`, entries: entries(m), min: 12 })); }
-  for (const [k, m] of G.plByLY) { const [lg, y] = k.split('|'); push('players by league and year', build({ id: `pro.plbyly.${idk(lg, y)}`, category: CAT, subtype: 'players-by-league-year', text: `Name a player who played ${PLACE[lg]} in ${y}`, entries: entries(m), min: 20 })); }
-  for (const [k, m] of G.chByLYS) { const [lg, y, sp] = k.split('|'); push('champions by league, year and split', build({ id: `pro.chbylys.${idk(lg, y, sp)}`, category: CAT, subtype: 'champions-by-league-split', text: `Name a champion that was played ${PLACE[lg]} in${split(sp)} ${y}`, entries: entries(m), min: 15 })); }
-  for (const [k, m] of G.chByLY) { const [lg, y] = k.split('|'); push('champions by league and year', build({ id: `pro.chbyly.${idk(lg, y)}`, category: CAT, subtype: 'champions-by-league-year', text: `Name a champion that was played ${PLACE[lg]} in ${y}`, entries: entries(m), min: 15 })); }
-  for (const [k, m] of G.chByLYP) { const [lg, y, pos] = k.split('|'); push('champions by league, year and role', build({ id: `pro.chbylyp.${idk(lg, y, pos)}`, category: CAT, subtype: 'champions-by-role', text: `Name a champion played in the ${POS[pos].replace(' laner', '').replace('ADC', 'ADC')} role ${PLACE[lg]} in ${y}`, entries: entries(m), min: 10 })); }
-  for (const [k, m] of G.banByLY) { const [lg, y] = k.split('|'); push('banned champions by league and year', build({ id: `pro.banly.${idk(lg, y)}`, category: CAT, subtype: 'bans-by-league-year', text: `Name a champion that was banned ${PLACE[lg]} in ${y}`, entries: entries(m), min: 15 })); }
+  for (const [pl, m] of G.chByPl) if (total(m) >= 40) Q('champions by player', { id: `pro.chbypl.${idk(pl)}`, subtype: 'champions-by-player', text: `Name a champion ${pl} has played ${ALL}`, entries: chE(m), max: C, pop: 100 * plProm(pl) });
+  for (const [k, m] of G.chByPlY) { const [pl, y] = k.split('|'); if (total(m) >= 25) Q('champions by player and year', { id: `pro.chbyply.${idk(pl, y)}`, subtype: 'champions-by-player-year', text: `Name a champion ${pl} played in ${y}`, entries: chE(m), max: C, pop: 100 * plProm(pl) * yf(+y) }); }
+  for (const [ch, m] of G.plByCh) Q('players by champion', { id: `pro.plbych.${idk(ch)}`, subtype: 'players-by-champion', text: `Name a player who has played ${ch} ${ALL}`, entries: plE(m), min: 10, pop: chFame(ch) });
+  for (const [k, m] of G.plByChY) { const [ch, y] = k.split('|'); Q('players by champion and year', { id: `pro.plbychy.${idk(ch, y)}`, subtype: 'players-by-champion-year', text: `Name a player who played ${ch} in ${y}`, entries: plE(m), min: 10, pop: chFame(ch) * yf(+y) }); }
+  for (const [k, m] of G.plByChLY) { const [ch, lg, y] = k.split('|'); Q('players by champion, league and year', { id: `pro.plbychly.${idk(ch, lg, y)}`, subtype: 'players-by-champion-league-year', text: `Name a player who played ${ch} ${PLACE[lg]} in ${y}`, entries: plE(m), min: 10, pop: chFame(ch) * LF(lg) * yf(+y) }); }
+  for (const [k, m] of G.tmByChY) { const [ch, y] = k.split('|'); Q('teams by champion and year', { id: `pro.tmbychy.${idk(ch, y)}`, subtype: 'teams-by-champion-year', text: `Name a team that played ${ch} in ${y}`, entries: tmE(m), min: 10, max: 80, pop: chFame(ch) * yf(+y) }); }
+  for (const [ch, m] of G.tmByCh) Q('teams by champion', { id: `pro.tmbych.${idk(ch)}`, subtype: 'teams-by-champion', text: `Name a team that has played ${ch} ${ALL}`, entries: tmE(m), min: 10, max: 80, pop: chFame(ch) });
+  for (const [tm, m] of G.plByTm) if (total(m) >= 40) Q('players by team', { id: `pro.plbytm.${idk(tm)}`, subtype: 'players-by-team', text: `Name a player who has played for ${tm} ${ALL}`, entries: plE(m), pop: 100 * tmProm(tm) });
+  for (const [k, m] of G.plByTmY) { const [tm, y] = k.split('|'); Q('players by team and year', { id: `pro.plbytmy.${idk(tm, y)}`, subtype: 'players-by-team-year', text: `Name a player who played for ${tm} in ${y}`, entries: plE(m), min: 6, pop: 100 * tmProm(tm) * yf(+y) }); }
+  for (const [k, m] of G.tmByLYS) { const [lg, y, sp] = k.split('|'); Q('teams by league, year and split', { id: `pro.tmbylys.${idk(lg, y, sp)}`, subtype: 'teams-by-league-split', text: `Name a team that played ${PLACE[lg]} in${split(sp)} ${y}`, entries: tmE(m), min: 6, pop: 80 * LF(lg) * yf(+y) }); }
+  for (const [k, m] of G.tmPlayoffs) { const [lg, y, sp] = k.split('|'); Q('playoff teams', { id: `pro.tmpo.${idk(lg, y, sp)}`, subtype: 'playoff-teams', text: `Name a team that played in the playoffs ${PLACE[lg]} in${split(sp)} ${y}`, entries: tmE(m), min: 6, pop: 70 * LF(lg) * yf(+y) }); }
+  for (const [k, m] of G.plByLYP) { const [lg, y, pos] = k.split('|'); Q('players by league, year and role', { id: `pro.plbylyp.${idk(lg, y, pos)}`, subtype: 'players-by-role', text: `Name a ${POS[pos]} who played ${PLACE[lg]} in ${y}`, entries: plE(m), min: 12, pop: 80 * LF(lg) * yf(+y) }); }
+  for (const [k, m] of G.plByLY) { const [lg, y] = k.split('|'); Q('players by league and year', { id: `pro.plbyly.${idk(lg, y)}`, subtype: 'players-by-league-year', text: `Name a player who played ${PLACE[lg]} in ${y}`, entries: plE(m), min: 20, pop: 80 * LF(lg) * yf(+y) }); }
+  for (const [k, m] of G.chByLYS) { const [lg, y, sp] = k.split('|'); Q('champions by league, year and split', { id: `pro.chbylys.${idk(lg, y, sp)}`, subtype: 'champions-by-league-split', text: `Name a champion that was played ${PLACE[lg]} in${split(sp)} ${y}`, entries: chE(m), min: 15, max: C, pop: 80 * LF(lg) * yf(+y) }); }
+  for (const [k, m] of G.chByLY) { const [lg, y] = k.split('|'); Q('champions by league and year', { id: `pro.chbyly.${idk(lg, y)}`, subtype: 'champions-by-league-year', text: `Name a champion that was played ${PLACE[lg]} in ${y}`, entries: chE(m), min: 15, max: C, pop: 80 * LF(lg) * yf(+y) }); }
+  for (const [k, m] of G.chByLYP) { const [lg, y, pos] = k.split('|'); Q('champions by league, year and role', { id: `pro.chbylyp.${idk(lg, y, pos)}`, subtype: 'champions-by-role', text: `Name a champion played in the ${POS[pos].replace(' laner', '')} role ${PLACE[lg]} in ${y}`, entries: chE(m), min: 10, max: C, pop: 80 * LF(lg) * yf(+y) }); }
+  for (const [k, m] of G.banByLY) { const [lg, y] = k.split('|'); Q('banned champions by league and year', { id: `pro.banly.${idk(lg, y)}`, subtype: 'bans-by-league-year', text: `Name a champion that was banned ${PLACE[lg]} in ${y}`, entries: chE(m), min: 15, max: C, pop: 80 * LF(lg) * yf(+y) }); }
   return { questions: out, stat, rows: players.length, years: [minY, maxY] };
 }

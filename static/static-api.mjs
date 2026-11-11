@@ -1,7 +1,7 @@
 // Browser-side stand-in for the Worker API, used by the GitHub Pages build.
 // It applies the same rules (matching, tiers, timing) as src/worker.mjs, but state lives in this browser.
 import { TIERS, matchAnswer, etDate, resetAt, ROUND_MS, PREVIEW_MS } from './rules.mjs';
-import { promptsFor, dayNumber } from './content/bank.mjs';
+import { puzzleFromPool, dayNumber } from './content/pool.mjs';
 
 const KEY = 'rd:static-db:v1';
 let mem = null;
@@ -9,7 +9,11 @@ const load = () => { if (mem) return mem; try { mem = JSON.parse(localStorage.ge
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(mem)); } catch { /* private mode: keep in memory */ } };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 const fail = (error, status = 400) => json({ error }, status);
-const puzzle = date => ({ date, dayNumber: dayNumber(date), source: 'Rift Dive prompt bank', prompts: promptsFor(date) });
+const PUZ = new Map();
+const realFetch = window.fetch.bind(window);
+const getJson = async path => { const r = await realFetch(new URL(path, location.href)); if (!r.ok) throw new Error(path + ' ' + r.status); return r.json(); };
+const ensure = async date => { if (!PUZ.has(date)) PUZ.set(date, await puzzleFromPool(date, getJson)); };
+const puzzle = date => PUZ.get(date);
 
 function state(run) {
   const db = load(), p = puzzle(run.date);
@@ -19,11 +23,12 @@ function state(run) {
     completed: !!run.completed, results, score: results.reduce((s, r) => s + r.score, 0) };
 }
 
-function handle(path, url, init) {
+async function handle(path, url, init) {
   const db = load(), date = etDate(), method = (init?.method || 'GET').toUpperCase();
   let data = {};
   if (method === 'POST') { try { data = JSON.parse(init.body || '{}'); } catch { return fail('Invalid request.'); } }
   const run = db.runs[data.runId || url.searchParams.get('run')];
+  await ensure(date); if (run) await ensure(run.date);
   if (method === 'GET' && path === 'today') { const p = puzzle(date); return json({ date, dayNumber: p.dayNumber, sample: false, source: p.source, resetsAt: resetAt(date), prompts: p.prompts.map(({ id, text }) => ({ id, text })) }); }
   if (method === 'GET' && path === 'health') return json({ ok: true, static: true });
   if (method === 'GET' && path === 'state') return run ? json(state(run)) : fail('Dive not found on this browser.', 404);
@@ -70,9 +75,8 @@ function handle(path, url, init) {
   return fail('Unknown endpoint.', 404);
 }
 
-const realFetch = window.fetch.bind(window);
 window.fetch = (input, init) => {
   const url = new URL(typeof input === 'string' ? input : input.url, location.href);
   const m = url.origin === location.origin && url.pathname.match(/\/api\/([a-z]+)$/);
-  return m ? Promise.resolve(handle(m[1], url, init)) : realFetch(input, init);
+  return m ? handle(m[1], url, init) : realFetch(input, init);
 };
