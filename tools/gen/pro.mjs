@@ -101,8 +101,20 @@ export function generatePro({ players, teams, years }, { fame = {} } = {}) {
     tally(g('tmByLYS'), r.lg + '|' + r.y + '|' + r.sp, r.team); tally(g('plByLY'), r.lg + '|' + r.y, r.pl);
     if (POS[r.pos]) tally(g('plByLYP'), r.lg + '|' + r.y + '|' + r.pos, r.pl);
     if (r.po) tally(g('tmPlayoffs'), r.lg + '|' + r.y + '|' + r.sp, r.team);
+    // ---- extra scopes
+    tally(g('tmByLY'), r.lg + '|' + r.y, r.team); tally(g('tmByL'), r.lg, r.team);
+    if (POS[r.pos]) { tally(g('plByTmP'), r.team + '|' + r.pos, r.pl); tally(g('plByLP'), r.lg + '|' + r.pos, r.pl); tally(g('plByLYSP'), r.lg + '|' + r.y + '|' + r.sp + '|' + r.pos, r.pl); }
+    tally(g('plByLYS'), r.lg + '|' + r.y + '|' + r.sp, r.pl);
+    if (r.ch) {
+      tally(g('chByTm'), r.team, r.ch); tally(g('chByTmY'), r.team + '|' + r.y, r.ch); tally(g('chByTmYS'), r.team + '|' + r.y + '|' + r.sp, r.ch); tally(g('chByTmLY'), r.team + '|' + r.lg + '|' + r.y, r.ch);
+      if (POS[r.pos]) { tally(g('chByTmYP'), r.team + '|' + r.y + '|' + r.pos, r.ch); tally(g('chByLYSP'), r.lg + '|' + r.y + '|' + r.sp + '|' + r.pos, r.ch); tally(g('plByChP'), r.ch + '|' + r.pos, r.pl); tally(g('chByYP'), r.y + '|' + r.pos, r.ch); tally(g('chByLP'), r.lg + '|' + r.pos, r.ch); }
+      tally(g('chByPlTm'), r.pl + '|' + r.team, r.ch); tally(g('chByPlLY'), r.pl + '|' + r.lg + '|' + r.y, r.ch); tally(g('chByPlYS'), r.pl + '|' + r.y + '|' + r.sp, r.ch); tally(g('chByPlL'), r.pl + '|' + r.lg, r.ch);
+      tally(g('plByChLYS'), r.ch + '|' + r.lg + '|' + r.y + '|' + r.sp, r.pl); tally(g('plByChL'), r.ch + '|' + r.lg, r.pl); tally(g('tmByChLY'), r.ch + '|' + r.lg + '|' + r.y, r.team); tally(g('tmByChL'), r.ch + '|' + r.lg, r.team);
+      tally(g('chByL'), r.lg, r.ch); tally(g('chByY'), String(r.y), r.ch);
+      if (r.po) tally(g('chPoLYS'), r.lg + '|' + r.y + '|' + r.sp, r.ch);
+    }
   }
-  for (const r of teams) for (const b of r.bans) tally(g('banByLY'), r.lg + '|' + r.y, b);
+  for (const r of teams) for (const b of r.bans) { tally(g('banByLY'), r.lg + '|' + r.y, b); tally(g('banByTm'), r.team, b); tally(g('banByTmY'), r.team + '|' + r.y, b); tally(g('banByLYS'), r.lg + '|' + r.y + '|' + r.sp, b); tally(g('banByY'), String(r.y), b); tally(g('banByL'), r.lg, b); }
   const total = m => [...m.values()].reduce((s, x) => s + x, 0);
   const Q = (family, o) => push(family, build({ category: CAT, ...o }));
 
@@ -123,5 +135,41 @@ export function generatePro({ players, teams, years }, { fame = {} } = {}) {
   for (const [k, m] of G.chByLY) { const [lg, y] = k.split('|'); Q('champions by league and year', { id: `pro.chbyly.${idk(lg, y)}`, subtype: 'champions-by-league-year', text: `Name a champion that was played ${PLACE[lg]} in ${y}`, entries: chE(m), min: 15, max: C, pop: 80 * LF(lg) * yf(+y) }); }
   for (const [k, m] of G.chByLYP) { const [lg, y, pos] = k.split('|'); Q('champions by league, year and role', { id: `pro.chbylyp.${idk(lg, y, pos)}`, subtype: 'champions-by-role', text: `Name a champion played in the ${POS[pos].replace(' laner', '')} role ${PLACE[lg]} in ${y}`, entries: chE(m), min: 10, max: C, pop: 80 * LF(lg) * yf(+y) }); }
   for (const [k, m] of G.banByLY) { const [lg, y] = k.split('|'); Q('banned champions by league and year', { id: `pro.banly.${idk(lg, y)}`, subtype: 'bans-by-league-year', text: `Name a champion that was banned ${PLACE[lg]} in ${y}`, entries: chE(m), min: 15, max: C, pop: 80 * LF(lg) * yf(+y) }); }
+  // ---- more scopes (all keys are 'a|b|c' strings; text builders take the parts)
+  const slug = f => f.replace(/[^a-z]+/gi, '-').toLowerCase();
+  const X = (family, map, text, ent, o = {}) => { for (const [k, m] of G[map]) { const p = k.split('|'); const oo = typeof o === 'function' ? o(p, m) : o; if (oo === null) continue; Q(family, { id: `pro.${map}.${idk(...p)}`, subtype: slug(family), text: text(...p), entries: ent(m), ...oo }); } };
+  const POSN = pos => POS[pos].replace(' laner', '');
+  const lyPop = (lg, y) => 80 * LF(lg) * yf(+y);
+  X('champions by team', 'chByTm', tm => `Name a champion ${tm} has played ${ALL}`, chE, (p, m) => (total(m) >= 40 ? { max: C, pop: 100 * tmProm(p[0]) } : null));
+  X('champions by team and year', 'chByTmY', (tm, y) => `Name a champion ${tm} played in ${y}`, chE, (p, m) => (total(m) >= 25 ? { max: C, pop: 100 * tmProm(p[0]) * yf(+p[1]) } : null));
+  X('champions by team, year and role', 'chByTmYP', (tm, y, pos) => `Name a champion ${tm} played in the ${POSN(pos)} role in ${y}`, chE, (p, m) => ({ min: 7, max: C, pop: 100 * tmProm(p[0]) * yf(+p[1]) }));
+  X('champions by team, year and split', 'chByTmYS', (tm, y, sp) => `Name a champion ${tm} played in${split(sp)} ${y}`, chE, (p, m) => (total(m) >= 20 ? { max: C, pop: 100 * tmProm(p[0]) * yf(+p[1]) } : null));
+  X('champions by team, league and year', 'chByTmLY', (tm, lg, y) => `Name a champion ${tm} played ${PLACE[lg]} in ${y}`, chE, (p, m) => (total(m) >= 20 ? { max: C, pop: 100 * tmProm(p[0]) * LF(p[1]) * yf(+p[2]) } : null));
+  X('champions by player and team', 'chByPlTm', (pl, tm) => `Name a champion ${pl} played for ${tm}`, chE, (p, m) => (total(m) >= 20 ? { max: C, pop: 100 * plProm(p[0]) } : null));
+  X('champions by player, league and year', 'chByPlLY', (pl, lg, y) => `Name a champion ${pl} played ${PLACE[lg]} in ${y}`, chE, (p, m) => (total(m) >= 20 ? { max: C, pop: 100 * plProm(p[0]) * LF(p[1]) * yf(+p[2]) } : null));
+  X('champions by player, year and split', 'chByPlYS', (pl, y, sp) => `Name a champion ${pl} played in${split(sp)} ${y}`, chE, (p, m) => (total(m) >= 18 ? { max: C, pop: 100 * plProm(p[0]) * yf(+p[1]) } : null));
+  X('champions by player and league', 'chByPlL', (pl, lg) => `Name a champion ${pl} played ${PLACE[lg]}`, chE, (p, m) => (total(m) >= 30 ? { max: C, pop: 100 * plProm(p[0]) * LF(p[1]) } : null));
+  X('champions by league, year, split and role', 'chByLYSP', (lg, y, sp, pos) => `Name a champion played in the ${POSN(pos)} role ${PLACE[lg]} in${split(sp)} ${y}`, chE, (p) => ({ min: 10, max: C, pop: lyPop(p[0], p[1]) }));
+  X('champions by year and role', 'chByYP', (y, pos) => `Name a champion played in the ${POSN(pos)} role in pro play in ${y}`, chE, (p) => ({ min: 10, max: C, pop: 80 * yf(+p[0]) }));
+  X('champions by league and role', 'chByLP', (lg, pos) => `Name a champion played in the ${POSN(pos)} role ${PLACE[lg]}`, chE, (p) => ({ min: 10, max: C, pop: 80 * LF(p[0]) }));
+  X('champions by league', 'chByL', lg => `Name a champion that has been played ${PLACE[lg]}`, chE, () => ({ min: 10, max: C, pop: 60 }));
+  X('champions by year', 'chByY', y => `Name a champion that was played in pro play in ${y}`, chE, (p) => ({ min: 10, max: C, pop: 70 * yf(+p[0]) }));
+  X('playoff champions', 'chPoLYS', (lg, y, sp) => `Name a champion that was played in the playoffs ${PLACE[lg]} in${split(sp)} ${y}`, chE, (p) => ({ min: 10, max: C, pop: 60 * LF(p[0]) * yf(+p[1]) }));
+  X('banned champions by team', 'banByTm', tm => `Name a champion ${tm} has banned ${ALL}`, chE, (p, m) => (total(m) >= 30 ? { max: C, pop: 100 * tmProm(p[0]) } : null));
+  X('banned champions by team and year', 'banByTmY', (tm, y) => `Name a champion ${tm} banned in ${y}`, chE, (p, m) => (total(m) >= 20 ? { max: C, pop: 100 * tmProm(p[0]) * yf(+p[1]) } : null));
+  X('banned champions by league, year and split', 'banByLYS', (lg, y, sp) => `Name a champion that was banned ${PLACE[lg]} in${split(sp)} ${y}`, chE, (p) => ({ min: 12, max: C, pop: lyPop(p[0], p[1]) }));
+  X('banned champions by year', 'banByY', y => `Name a champion that was banned in pro play in ${y}`, chE, (p) => ({ min: 12, max: C, pop: 60 * yf(+p[0]) }));
+  X('banned champions by league', 'banByL', lg => `Name a champion that has been banned ${PLACE[lg]}`, chE, () => ({ min: 12, max: C, pop: 55 }));
+  X('players by league, year and split', 'plByLYS', (lg, y, sp) => `Name a player who played ${PLACE[lg]} in${split(sp)} ${y}`, plE, (p) => ({ min: 15, pop: lyPop(p[0], p[1]) }));
+  X('players by league, year, split and role', 'plByLYSP', (lg, y, sp, pos) => `Name a ${POS[pos]} who played ${PLACE[lg]} in${split(sp)} ${y}`, plE, (p) => ({ min: 10, pop: lyPop(p[0], p[1]) }));
+  X('players by team and role', 'plByTmP', (tm, pos) => `Name a ${POS[pos]} who has played for ${tm} ${ALL}`, plE, (p) => ({ min: 7, pop: 100 * tmProm(p[0]) }));
+  X('players by league and role', 'plByLP', (lg, pos) => `Name a ${POS[pos]} who has played ${PLACE[lg]}`, plE, (p) => ({ min: 15, pop: 70 * LF(p[0]) }));
+  X('players by champion and role', 'plByChP', (ch, pos) => `Name a ${POS[pos]} who has played ${ch} ${ALL}`, plE, (p) => ({ min: 10, pop: chFame(p[0]) }));
+  X('players by champion, league, year and split', 'plByChLYS', (ch, lg, y, sp) => `Name a player who played ${ch} ${PLACE[lg]} in${split(sp)} ${y}`, plE, (p) => ({ min: 8, pop: chFame(p[0]) * LF(p[1]) * yf(+p[2]) }));
+  X('players by champion and league', 'plByChL', (ch, lg) => `Name a player who has played ${ch} ${PLACE[lg]}`, plE, (p) => ({ min: 10, pop: chFame(p[0]) * LF(p[1]) }));
+  X('teams by champion, league and year', 'tmByChLY', (ch, lg, y) => `Name a team that played ${ch} ${PLACE[lg]} in ${y}`, tmE, (p) => ({ min: 8, max: 80, pop: chFame(p[0]) * LF(p[1]) * yf(+p[2]) }));
+  X('teams by champion and league', 'tmByChL', (ch, lg) => `Name a team that has played ${ch} ${PLACE[lg]}`, tmE, (p) => ({ min: 8, max: 80, pop: chFame(p[0]) * LF(p[1]) }));
+  X('teams by league and year', 'tmByLY', (lg, y) => `Name a team that played ${PLACE[lg]} in ${y}`, tmE, (p) => ({ min: 8, pop: 80 * LF(p[0]) * yf(+p[1]) }));
+  X('teams by league', 'tmByL', lg => `Name a team that has played ${PLACE[lg]}`, tmE, () => ({ min: 10, pop: 60 }));
   return { questions: out, stat, rows: players.length, years: [minY, maxY] };
 }

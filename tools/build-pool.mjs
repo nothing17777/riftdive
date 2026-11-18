@@ -4,6 +4,8 @@ import { mkdir, writeFile, rm, readFile } from 'node:fs/promises';
 import { loadRows, generatePro } from './gen/pro.mjs';
 import { generateGame } from './gen/game.mjs';
 import { generateUnique } from './gen/unique.mjs';
+import { generateCombos } from './gen/combo.mjs';
+import { generateCurated } from './gen/curated.mjs';
 import { POOL, tierFor } from '../src/content/bank.mjs';
 import { shardOf, SHARDS } from '../src/content/pool.mjs';
 import { norm } from './lib/question.mjs';
@@ -16,6 +18,7 @@ const rows = await loadRows(raw);
 const pro = generatePro(rows, { fame });
 const uniq = generateUnique(rows, { fame });
 const game = generateGame({ champions: await j('meraki-champs.json'), items: await j('meraki-items.json'), fame });
+const combos = generateCombos({ champions: await j('meraki-champs.json'), items: await j('meraki-items.json'), fame });
 // Curated prompts (hand-written): kept where no generated question covers the same wording.
 const TIER = { plankton: 0, tooclever: 1, schooler: 2, rare: 3, deepcut: 4, krillion: 5 };
 const curated = POOL.map(p => {
@@ -25,7 +28,7 @@ const curated = POOL.map(p => {
 });
 
 const all = [], ids = new Set(), texts = new Set(), dropped = { dupId: 0, dupText: 0 };
-for (const q of [...pro.questions, ...uniq.questions, ...game.questions, ...curated]) {
+for (const q of [...pro.questions, ...uniq.questions, ...game.questions, ...combos.questions, ...generateCurated().questions, ...curated]) {
   const tk = norm(q.t);
   if (ids.has(q.id)) { dropped.dupId++; continue; }
   if (texts.has(tk)) { dropped.dupText++; continue; }

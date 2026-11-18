@@ -4,7 +4,7 @@ import { promptsFor as curatedFor, dayNumber } from './bank.mjs';
 export { dayNumber };
 
 export const TIER_KEYS = ['plankton', 'tooclever', 'schooler', 'rare', 'deepcut', 'krillion'];
-export const SHARDS = 64;
+export const SHARDS = 256;
 // Weights favour variety; thin categories (few questions) are down-weighted so they do not repeat constantly.
 const WEIGHTS = { 'Pro Play': 0.30, Champions: 0.22, Game: 0.14, Lore: 0.14, Cosmetics: 0.12, Music: 0.02, Culture: 0.02 };
 
