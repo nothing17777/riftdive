@@ -39,10 +39,12 @@ const cache = new Map();
 export const resetPoolCache = () => cache.clear(); // for tests
 const load = async (path, getJson) => { if (!cache.has(path)) cache.set(path, getJson(path)); try { return await cache.get(path); } catch (e) { cache.delete(path); throw e; } };
 
-export async function puzzleFromPool(date, getJson) {
+// `date` may carry a "~seed" suffix (practice dives): the suffix changes the picks, the real date drives day number and reset.
+export async function puzzleFromPool(seedKey, getJson) {
+  const date = seedKey.split('~')[0];
   try {
     const index = await load('q/index.json', getJson);
-    const ids = pickIds(index, date);
+    const ids = pickIds(index, seedKey);
     const shards = await Promise.all([...new Set(ids.map(shardOf))].map(n => load(`q/s${n}.json`, getJson).then(d => [n, d])));
     const byShard = Object.fromEntries(shards);
     const prompts = ids.map(id => {
@@ -53,6 +55,6 @@ export async function puzzleFromPool(date, getJson) {
     return { date, dayNumber: dayNumber(date), source: 'Rift Dive question bank', prompts };
   } catch (e) {
     console.warn('Question pool unavailable, using the curated bank:', e.message);
-    return { date, dayNumber: dayNumber(date), source: 'Rift Dive curated bank', prompts: curatedFor(date) };
+    return { date, dayNumber: dayNumber(date), source: 'Rift Dive curated bank', prompts: curatedFor(seedKey) };
   }
 }

@@ -15,6 +15,7 @@ function headers(response, additional = {}) {
   return new Response(response.body, { status: response.status, headers: h });
 }
 async function puzzleFor(env, date) {
+  if (date.includes('~')) return puzzleFromPool(date, async path => { const r = await env.ASSETS.fetch(new Request('https://assets.local/' + path)); if (!r.ok) throw new Error(path + ' ' + r.status); return r.json(); }); // practice: random per run, never stored
   if (cache.has(date)) return cache.get(date);
   const row = await env.DB.prepare('SELECT content FROM puzzles WHERE date=?').bind(date).first();
   if (row) { const p = JSON.parse(row.content); cache.set(date, p); return p; }
@@ -79,11 +80,12 @@ async function api(request, env, url) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return fail('Invalid request.');
   if (path === '/api/start') {
     const id = player || crypto.randomUUID(), mode = data.practice === true ? 'practice' : 'daily';
+    const runDate = mode === 'practice' ? `${date}~${crypto.randomUUID().slice(0, 8)}` : date;
     const puzzle = await puzzleFor(env, date); await saveSample(env, puzzle);
     let run = mode === 'daily' ? await env.DB.prepare("SELECT * FROM runs WHERE player=? AND date=? AND mode='daily'").bind(id, date).first() : null;
     if (!run) {
       const rid = crypto.randomUUID();
-      await env.DB.prepare('INSERT OR IGNORE INTO runs(id,player,date,mode,round_start,created_at) VALUES(?,?,?,?,?,?)').bind(rid, id, date, mode, Date.now() + PREVIEW_MS, Date.now()).run();
+      await env.DB.prepare('INSERT OR IGNORE INTO runs(id,player,date,mode,round_start,created_at) VALUES(?,?,?,?,?,?)').bind(rid, id, runDate, mode, Date.now() + PREVIEW_MS, Date.now()).run();
       run = mode === 'daily' ? await env.DB.prepare("SELECT * FROM runs WHERE player=? AND date=? AND mode='daily'").bind(id,date).first() : await ownRun(env,rid,id);
     }
     return json(await state(env, run), 200, { 'Set-Cookie': `ok_player=${id}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000${url.protocol === 'https:' ? '; Secure' : ''}` });
