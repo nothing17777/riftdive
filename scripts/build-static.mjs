@@ -11,6 +11,7 @@ await cp('public', 'dist', { recursive: true });
 await cp('src/content/bank.mjs', 'dist/content/bank.mjs');
 await cp('src/content/pool.mjs', 'dist/content/pool.mjs');
 await cp('static/static-api.mjs', 'dist/static-api.mjs');
+// public/entities.mjs is already copied with the rest of public/
 await writeFile('dist/.nojekyll', '');
 
 // Relative paths so the site works under /<repo>/ as well as at a domain root.

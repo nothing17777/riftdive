@@ -2,6 +2,7 @@ import { SITE } from './config.mjs';
 import { documents } from './docs.mjs';
 import { homePage, infoPage } from './html.mjs';
 import { puzzleFromPool } from './content/pool.mjs';
+import { buildDictionary, explainMiss, missMessage } from '../public/entities.mjs';
 import { TIERS, normalize, matchAnswer, etDate, resetAt, ROUND_MS, PREVIEW_MS } from '../public/rules.mjs';
 
 const cache = new Map();
@@ -26,8 +27,13 @@ async function puzzleFor(env, date) {
 async function saveSample(env, puzzle) {
   await env.DB.prepare('INSERT OR IGNORE INTO puzzles(date,day_number,source,content) VALUES(?,?,?,?)').bind(puzzle.date, puzzle.dayNumber, puzzle.source, JSON.stringify(puzzle)).run();
 }
+let dictPromise;
+async function dictionary(env) {
+  dictPromise ||= env.ASSETS.fetch(new Request('https://assets.local/q/entities.json')).then(r => (r.ok ? r.json() : Promise.reject(new Error('entities ' + r.status)))).then(buildDictionary);
+  try { return await dictPromise; } catch { dictPromise = null; return { byKey: new Map(), names: [] }; }
+}
 function promptDTO(puzzle) {
-  return { date: puzzle.date, dayNumber: puzzle.dayNumber, sample: false, source: puzzle.source, resetsAt: resetAt(puzzle.date), prompts: puzzle.prompts.map(({ id, text }) => ({ id, text })) };
+  return { date: puzzle.date, dayNumber: puzzle.dayNumber, sample: false, source: puzzle.source, resetsAt: resetAt(puzzle.date), prompts: puzzle.prompts.map(({ id, text, category }) => ({ id, text, category })) };
 }
 async function state(env, run) {
   const results = (await env.DB.prepare('SELECT round,raw_answer AS rawAnswer,answer,tier,score FROM answers WHERE run_id=? ORDER BY round').bind(run.id).all()).results;
@@ -112,7 +118,7 @@ async function api(request, env, url) {
     // A late manual request cannot revive an expired answer window.
     const timely = !late || (data.timeout === true && Date.now() <= run.round_start + ROUND_MS + 1500);
     const match = raw && timely ? matchAnswer(raw,prompt.answers) : null;
-    if (!match && raw && !late && !data.timeout) return json({ rejected: true, message: `“${raw}”: no echo. try again` });
+    if (!match && raw && !late && !data.timeout) { const dict = await dictionary(env), e = dict.names.length ? explainMiss(dict, raw) : { reason: 'generic' }; return json({ rejected: true, reason: e.reason, message: missMessage(raw, e) }); }
     if (match?.correction && data.confirm !== true && !late && !data.timeout && data.previewCorrection !== false) return json({ correction: match.answer, original: raw });
     const result = { round: run.next_round, rawAnswer: raw || null, answer: match?.answer || null, tier: match?.tier || null, score: match ? TIERS[match.tier].score : 0, quip: match?.quip || null, promptText: prompt.text };
     const now = Date.now();

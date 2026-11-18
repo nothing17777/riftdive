@@ -207,3 +207,12 @@ body[data-phase="done"] .mascot{z-index:15}
 @keyframes companion-chomp{22%{transform:translateX(-7px) scale(.9) rotate(7deg)}42%{transform:translateX(11px) scale(1.24) rotate(-9deg)}58%{transform:translateX(5px) scale(1.02)}74%{transform:translateX(9px) scale(1.18) rotate(-7deg)}}
 .low-power .mascot:not(.poked):not(.celebrate) img{animation-play-state:paused}
 @media(prefers-reduced-motion:reduce){.mascot img{animation:none!important}}
+
+/* guess feedback, skip, suggestions */
+.suggest{position:absolute;left:0;right:0;bottom:70px;margin:0;padding:0;list-style:none;z-index:12;background:#0b1526f5;border:2px solid #1b3050;box-shadow:0 0 0 2px #030d1a}
+.suggest li{padding:7px 12px 5px;font-size:22px;letter-spacing:.04em;cursor:pointer;color:#e8f1ff;border-top:1px solid #1b3050}
+.suggest li:first-child{border-top:0}.suggest li[aria-selected=true],.suggest li:hover{background:#13304a;color:#0ac8b9}
+.rejected{position:absolute;left:0;right:0;bottom:112px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;pointer-events:none}
+.rejected span{font-size:16px;padding:0 8px;background:#ffffff0d;text-decoration:line-through;text-decoration-color:#ff5252b0;color:#7d93b8;letter-spacing:.04em}
+.skip-btn{display:block;margin:10px 0 0 auto;padding:2px 10px;font-size:16px;letter-spacing:.14em;background:transparent;border:1px solid #1b3050;color:#7d93b8}
+.skip-btn:hover{color:#e8f1ff;border-color:#c8aa6e}

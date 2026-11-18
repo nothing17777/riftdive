@@ -3,6 +3,7 @@
 import { mkdir, writeFile, rm, readFile } from 'node:fs/promises';
 import { loadRows, generatePro } from './gen/pro.mjs';
 import { generateGame } from './gen/game.mjs';
+import { generateUnique } from './gen/unique.mjs';
 import { POOL, tierFor } from '../src/content/bank.mjs';
 import { shardOf, SHARDS } from '../src/content/pool.mjs';
 import { norm } from './lib/question.mjs';
@@ -11,7 +12,9 @@ const [raw, meraki, out = 'public/q'] = process.argv.slice(2);
 const fame = JSON.parse(await readFile('tools/data/fame-champions-blended.json', 'utf8')).scores;
 const j = async f => JSON.parse(await readFile(`${meraki}/${f}`, 'utf8'));
 
-const pro = generatePro(await loadRows(raw), { fame });
+const rows = await loadRows(raw);
+const pro = generatePro(rows, { fame });
+const uniq = generateUnique(rows, { fame });
 const game = generateGame({ champions: await j('meraki-champs.json'), items: await j('meraki-items.json'), fame });
 // Curated prompts (hand-written): kept where no generated question covers the same wording.
 const TIER = { plankton: 0, tooclever: 1, schooler: 2, rare: 3, deepcut: 4, krillion: 5 };
@@ -22,7 +25,7 @@ const curated = POOL.map(p => {
 });
 
 const all = [], ids = new Set(), texts = new Set(), dropped = { dupId: 0, dupText: 0 };
-for (const q of [...pro.questions, ...game.questions, ...curated]) {
+for (const q of [...pro.questions, ...uniq.questions, ...game.questions, ...curated]) {
   const tk = norm(q.t);
   if (ids.has(q.id)) { dropped.dupId++; continue; }
   if (texts.has(tk)) { dropped.dupText++; continue; }
@@ -35,6 +38,12 @@ await Promise.all(shards.map((s, i) => writeFile(`${out}/s${i}.json`, JSON.strin
 const cats = {}, fam = {};
 for (const q of all) { cats[q.c] = (cats[q.c] || 0) + 1; fam[`${q.c} / ${q.g}`] = (fam[`${q.c} / ${q.g}`] || 0) + 1; }
 await writeFile(`${out}/index.json`, JSON.stringify({ v: 1, n: all.length, cats, q: all.map(q => [q.id, q.c, q.g, q.p, q.lc ? 1 : 0]) }));
+// Global name dictionary (most common first) for suggestions and "doesn't fit" vs "not recognised".
+const freq = new Map(), aliasOf = new Map();
+for (const q of all) for (const [name, , ...aliases] of q.a) { freq.set(name, (freq.get(name) || 0) + 1); for (const a of aliases) (aliasOf.get(name) || aliasOf.set(name, new Set()).get(name)).add(a); }
+const entities = [...freq].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([name]) => [name, ...(aliasOf.get(name) || [])]);
+await writeFile(`${out}/entities.json`, JSON.stringify({ v: 1, n: entities.length, e: entities }));
+console.log('entities in dictionary:', entities.length);
 const report = { total: all.length, categories: cats, dropped, proYears: pro.years, families: fam, lowConfidence: all.filter(q => q.lc).length };
 await mkdir('docs', { recursive: true }); await writeFile('docs/question-bank-report.json', JSON.stringify(report, null, 1) + '\n');
 console.log('TOTAL questions:', all.length, '| dropped:', JSON.stringify(dropped), '| low-confidence (items):', report.lowConfidence);

@@ -54,7 +54,7 @@ export async function loadRows(rawDir) {
       const lg = r[h.league]; if (!PLACE[lg]) continue;
       const base = { y: +r[h.year], lg, sp: r[h.split], po: r[h.playoffs] === '1', team: r[h.teamname], res: r[h.result] };
       if (r[h.position] === 'team') teams.push({ ...base, bans: [1, 2, 3, 4, 5].map(i => r[h['ban' + i]]).filter(Boolean) });
-      else if (r[h.playername]) players.push({ ...base, pl: r[h.playername], pos: r[h.position], ch: r[h.champion] });
+      else if (r[h.playername]) players.push({ ...base, pl: r[h.playername], pos: r[h.position], ch: r[h.champion], pk: +r[h.pentakills] || 0, qk: +r[h.quadrakills] || 0, k: +r[h.kills] || 0, d: +r[h.deaths] || 0, a: +r[h.assists] || 0, len: +r[h.gamelength] || 0, gid: r[h.gameid] });
     }
   }
   const spell = new Map();

@@ -124,3 +124,19 @@ test('puzzles load from the pool and fall back to the curated bank if it is unav
   const p=await puzzleFromPool('2026-11-10',getJson);assert.equal(p.prompts.length,7);assert.ok(p.prompts.every(q=>q.answers.every(a=>TIER_KEYS.includes(a.tier))));
   resetPoolCache();const f=await puzzleFromPool('2026-11-10',async()=>{throw new Error('offline')});resetPoolCache();assert.equal(f.prompts.length,7);assert.equal(f.source,'Rift Dive curated bank');
 });
+
+test('rejections explain themselves: real name that does not fit vs not recognised',async()=>{
+  const s=service();const{body:g}=await s.call('/api/start',{});const id=g.runId;
+  const today=(await puzzleFromPool(etDate(),getJson)).prompts[0];
+  const valid=new Set(today.answers.map(a=>a.answer.toLowerCase()));
+  const index=await getJson('q/entities.json');const known=index.e.map(x=>x[0]).find(n=>!valid.has(n.toLowerCase())&&n.length>=5&&/^[A-Za-z]+$/.test(n));
+  const wrong=await s.call('/api/answer',{runId:id,round:0,answer:known});assert.equal(wrong.body.rejected,true);assert.equal(wrong.body.reason,'wrong');assert.match(wrong.body.message,/doesn't fit/);
+  const unknown=await s.call('/api/answer',{runId:id,round:0,answer:'qqzzxxvv'});assert.equal(unknown.body.rejected,true);assert.equal(unknown.body.reason,'unknown');assert.match(unknown.body.message,/didn't recognise/);
+  const state=await s.call('/api/state?run='+id);assert.ok(state.body.prompts.every(p=>typeof p.category==='string'));
+  s.env.DB.close();
+});
+test('suggestions come from the global dictionary and never leak by prompt',async()=>{
+  const{buildDictionary,suggest,explainMiss}=await import('../public/entities.mjs');const d=buildDictionary(await getJson('q/entities.json'));
+  assert.ok(d.names.length>3000);assert.ok(suggest(d,'ga').length>0);assert.deepEqual(suggest(d,'g'),[]);
+  assert.ok(suggest(d,'lee').some(n=>/lee/i.test(n)));assert.equal(explainMiss(d,'zzqx9').reason,'unknown');
+});

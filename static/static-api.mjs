@@ -2,6 +2,7 @@
 // It applies the same rules (matching, tiers, timing) as src/worker.mjs, but state lives in this browser.
 import { TIERS, matchAnswer, etDate, resetAt, ROUND_MS, PREVIEW_MS } from './rules.mjs';
 import { puzzleFromPool, dayNumber } from './content/pool.mjs';
+import { buildDictionary, explainMiss, missMessage } from './entities.mjs';
 
 const KEY = 'rd:static-db:v1';
 let mem = null;
@@ -12,13 +13,15 @@ const fail = (error, status = 400) => json({ error }, status);
 const PUZ = new Map();
 const realFetch = window.fetch.bind(window);
 const getJson = async path => { const r = await realFetch(new URL(path, location.href)); if (!r.ok) throw new Error(path + ' ' + r.status); return r.json(); };
+let DICT = null;
+const dictionary = async () => { if (!DICT) { try { DICT = buildDictionary(await getJson('q/entities.json')); } catch { DICT = { byKey: new Map(), names: [] }; } } return DICT; };
 const ensure = async date => { if (!PUZ.has(date)) PUZ.set(date, await puzzleFromPool(date, getJson)); };
 const puzzle = date => PUZ.get(date);
 
 function state(run) {
   const db = load(), p = puzzle(run.date);
   const results = db.answers.filter(a => a.run === run.id).sort((a, b) => a.round - b.round).map(({ round, rawAnswer, answer, tier, score }) => ({ round, rawAnswer, answer, tier, score }));
-  return { date: p.date, dayNumber: p.dayNumber, sample: false, source: p.source, resetsAt: resetAt(p.date), prompts: p.prompts.map(({ id, text }) => ({ id, text })),
+  return { date: p.date, dayNumber: p.dayNumber, sample: false, source: p.source, resetsAt: resetAt(p.date), prompts: p.prompts.map(({ id, text, category }) => ({ id, text, category })),
     runId: run.id, mode: run.mode, round: run.next_round, roundStart: run.round_start, pausedAt: run.paused_at || null, serverNow: Date.now(),
     completed: !!run.completed, results, score: results.reduce((s, r) => s + r.score, 0) };
 }
@@ -29,7 +32,7 @@ async function handle(path, url, init) {
   if (method === 'POST') { try { data = JSON.parse(init.body || '{}'); } catch { return fail('Invalid request.'); } }
   const run = db.runs[data.runId || url.searchParams.get('run')];
   await ensure(date); if (run) await ensure(run.date);
-  if (method === 'GET' && path === 'today') { const p = puzzle(date); return json({ date, dayNumber: p.dayNumber, sample: false, source: p.source, resetsAt: resetAt(date), prompts: p.prompts.map(({ id, text }) => ({ id, text })) }); }
+  if (method === 'GET' && path === 'today') { const p = puzzle(date); return json({ date, dayNumber: p.dayNumber, sample: false, source: p.source, resetsAt: resetAt(date), prompts: p.prompts.map(({ id, text, category }) => ({ id, text, category })) }); }
   if (method === 'GET' && path === 'health') return json({ ok: true, static: true });
   if (method === 'GET' && path === 'state') return run ? json(state(run)) : fail('Dive not found on this browser.', 404);
   if (method === 'GET' && path === 'review') {
@@ -65,7 +68,7 @@ async function handle(path, url, init) {
     const late = Date.now() > run.round_start + ROUND_MS;
     const timely = !late || (data.timeout === true && Date.now() <= run.round_start + ROUND_MS + 1500);
     const match = raw && timely ? matchAnswer(raw, prompt.answers) : null;
-    if (!match && raw && !late && !data.timeout) return json({ rejected: true, message: `“${raw}”: no echo. try again` });
+    if (!match && raw && !late && !data.timeout) { const dict = await dictionary(), e = dict.names.length ? explainMiss(dict, raw) : { reason: 'generic' }; return json({ rejected: true, reason: e.reason, message: missMessage(raw, e) }); }
     if (match?.correction && data.confirm !== true && !late && !data.timeout && data.previewCorrection !== false) return json({ correction: match.answer, original: raw });
     const result = { round: run.next_round, rawAnswer: raw || null, answer: match?.answer || null, tier: match?.tier || null, score: match ? TIERS[match.tier].score : 0, quip: null, promptText: prompt.text };
     db.answers.push({ run: run.id, round: result.round, rawAnswer: result.rawAnswer, answer: result.answer, tier: result.tier, score: result.score });

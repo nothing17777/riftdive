@@ -7,11 +7,16 @@ export const TIERS = {
   krillion: { name: 'Pentakill', score: 100, emoji: '🌟', color: '#f0c36b', blurb: 'The designated gem. Rift Core.' },
 };
 export const BANDS = [
-  { min: 0, max: 150, tier: 'plankton', name: 'Minion', text: 'Still near the fountain.' },
-  { min: 151, max: 250, tier: 'schooler', name: 'Jungler', text: 'Learning the map.' },
-  { min: 251, max: 350, tier: 'rare', name: 'Elite', text: 'Below the river. Nice.' },
-  { min: 351, max: 449, tier: 'deepcut', name: 'Elder', text: 'Seriously deep dive.' },
-  { min: 450, max: 700, tier: 'krillion', name: 'Pentakill', text: 'Rift Core dweller. Absurd.' },
+  { min: 0, max: 69, tier: 'plankton', name: 'Iron', text: 'Still near the fountain.' },
+  { min: 70, max: 139, tier: 'plankton', name: 'Bronze', text: 'Learning the map.' },
+  { min: 140, max: 209, tier: 'tooclever', name: 'Silver', text: 'Holding your own.' },
+  { min: 210, max: 289, tier: 'schooler', name: 'Gold', text: 'Solid. You know your way around.' },
+  { min: 290, max: 369, tier: 'schooler', name: 'Platinum', text: 'Below the river. Nice.' },
+  { min: 370, max: 449, tier: 'rare', name: 'Emerald', text: 'Sharp. Few think of these.' },
+  { min: 450, max: 529, tier: 'rare', name: 'Diamond', text: 'Seriously deep dive.' },
+  { min: 530, max: 599, tier: 'deepcut', name: 'Master', text: 'Deep cuts everywhere.' },
+  { min: 600, max: 659, tier: 'deepcut', name: 'Grandmaster', text: 'Almost nobody finds these.' },
+  { min: 660, max: 700, tier: 'krillion', name: 'Challenger', text: 'Rift Core dweller. Absurd.' },
 ];
 export const ROUND_MS = 25000;
 export const PREVIEW_MS = 3000;

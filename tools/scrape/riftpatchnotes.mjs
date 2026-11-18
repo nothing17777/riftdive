@@ -1,4 +1,5 @@
 // Ranked pick rates per champion from riftpatchnotes.com (its robots.txt allows this; one request).
+// (In the sandbox run node with NODE_USE_ENV_PROXY=1 so fetch honours the proxy.)
 // Usage: node tools/scrape/riftpatchnotes.mjs [saved.html] > tools/data/pickrates-champions.json
 // With no argument it fetches https://www.riftpatchnotes.com/lol/winrates once, with an honest user agent.
 import { readFileSync } from 'node:fs';
