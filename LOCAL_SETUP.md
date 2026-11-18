@@ -13,7 +13,7 @@ The question bank is already generated and committed in `public/q/` (index, 64 s
 
 ## Regenerate the question bank (optional)
 Needs raw data that is NOT in the repo:
-- Oracle's Elixir CSVs `2014.csv` ... in one folder (Drive folder: https://drive.google.com/drive/folders/1gLSw0RLjBbtaNy0dgnGQDAZOHIgCe-HH; 2020-2026 were quota-blocked when I tried, so only 2014-2019 were used; download them yourself and name them `<year>.csv`).
+- Oracle's Elixir CSVs `2014.csv` ... `2026.csv` in one folder (Drive folder: https://drive.google.com/drive/folders/1gLSw0RLjBbtaNy0dgnGQDAZOHIgCe-HH; rename `<year>_LoL_esports_match_data_from_OraclesElixir.csv` to `<year>.csv`, symlinks work).
 - Meraki `meraki-champs.json` and `meraki-items.json` from https://cdn.merakianalytics.com/riot/lol/resources/latest/en-US/ (champions.json / items.json).
 ```sh
 node tools/build-pool.mjs <oe-csv-folder> <folder-with-meraki-json> public/q
@@ -25,7 +25,15 @@ node tools/build-pool.mjs <oe-csv-folder> <folder-with-meraki-json> public/q
 - `src/content/pool.mjs`: daily selection from the pool; `public/entities.mjs`: dictionary + suggestions
 - `static/static-api.mjs`: in-browser API used by the GitHub Pages build
 
+## Adapting tiers to real players (Worker + D1 only)
+`answer_counts` (migration 0003) counts accepted daily answers per question, with no player ids. Export it and re-tier the shards:
+```sh
+npx wrangler d1 execute riftdive --remote --json --command "SELECT qid,answer,n FROM answer_counts" > counts.json
+node tools/adapt.mjs counts.json public/q
+```
+The prior counts as about 40 players (`tools/lib/adapt.mjs`). The static GitHub Pages build has no server, so it cannot collect counts.
+
 ## Known gaps
-- Pro data stops at 2019 (see above). Lore/music/other-League content is thin (Music has 4 questions).
-- The newest UI (suggestion dropdown, rejected-guess chips, Skip) is unit-tested but was not yet checked visually in a browser.
-- Familiarity scores are estimates; nothing yet adapts to real player answers.
+- Pro Play is ~95% of the bank (about 21k questions, many about minor-league players); Music is tiny (6) and skin-name / item tiers are proxies (`lc:1`).
+- Meraki data (champions/items) is a snapshot; regenerate when new champions ship.
+- Familiarity for items, players and teams is not LLM-rated yet.

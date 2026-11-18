@@ -17,6 +17,7 @@ function database(){
   const db=new DatabaseSync(':memory:');
   db.exec(readFileSync(new URL('../migrations/0001_initial.sql',import.meta.url),'utf8'));
   db.exec(readFileSync(new URL('../migrations/0002_pause.sql',import.meta.url),'utf8'));
+  db.exec(readFileSync(new URL('../migrations/0003_answer_counts.sql',import.meta.url),'utf8'));
   const prepare=sql=>({
     bind(...args){
       const s=db.prepare(sql);
@@ -66,6 +67,7 @@ test('seven rounds are scored on server; retries cannot duplicate points; other 
     if(i<6){const n=await s.call('/api/next',{runId:id});assert.equal(n.body.round,i+1);}
   }
   assert.equal(game.score,700);assert.equal(game.completed,true);
+  const counts=await s.env.DB.prepare('SELECT qid,answer,n FROM answer_counts').bind().all();assert.equal(counts.results.length,7);assert.ok(counts.results.every(r=>r.n===1),'retries do not double-count');
   const same=await s.call('/api/start',{});assert.equal(same.body.runId,id);
   const review=await s.call('/api/review?run='+id);assert.equal(review.status,200);assert.equal(review.body.betterThan,null);assert.equal(review.body.population,0);
   const other=service();const missing=await other.call('/api/state?run='+id);assert.equal(missing.status,404);

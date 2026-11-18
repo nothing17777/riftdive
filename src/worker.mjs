@@ -125,6 +125,8 @@ async function api(request, env, url) {
     await env.DB.batch([
       env.DB.prepare('INSERT OR IGNORE INTO answers(run_id,round,raw_answer,answer,tier,score,created_at) SELECT id,?,?,?,?,?,? FROM runs WHERE id=? AND next_round=? AND round_start IS NOT NULL AND completed=0').bind(result.round,result.rawAnswer,result.answer,result.tier,result.score,now,run.id,result.round),
       env.DB.prepare('UPDATE runs SET next_round=?,round_start=NULL,completed=? WHERE id=? AND next_round=? AND EXISTS(SELECT 1 FROM answers WHERE run_id=? AND round=?)').bind(result.round+1,result.round===6?1:0,run.id,result.round,run.id,result.round),
+      // Anonymous per-question counts of accepted daily answers (feeds tools/adapt.mjs). Only when this request wrote the answer.
+      ...(result.answer && run.mode === 'daily' ? [env.DB.prepare("INSERT INTO answer_counts(qid,answer,n) SELECT ?,?,1 WHERE EXISTS(SELECT 1 FROM answers WHERE run_id=? AND round=? AND created_at=?) ON CONFLICT(qid,answer) DO UPDATE SET n=n+1").bind(prompt.id,result.answer,run.id,result.round,now)] : []),
     ]);
     const fresh = await state(env, await ownRun(env,run.id,player));
     const accepted = fresh.results.find(r => r.round === result.round);
