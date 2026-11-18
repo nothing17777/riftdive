@@ -1,12 +1,12 @@
 {
- "total": 21398,
+ "total": 22003,
  "categories": {
   "Pro Play": 20964,
-  "Lore": 50,
-  "Champions": 162,
-  "Game": 77,
-  "Cosmetics": 141,
-  "Music": 4
+  "Lore": 87,
+  "Champions": 266,
+  "Game": 134,
+  "Cosmetics": 546,
+  "Music": 6
  },
  "dropped": {
   "dupId": 0,
@@ -74,6 +74,25 @@
   "Champions / champions by ability name": 10,
   "Cosmetics / champions by skin line": 78,
   "Cosmetics / skin line by role": 62,
+  "Champions / champions by difficulty": 3,
+  "Champions / champions by role and difficulty": 15,
+  "Champions / champions by rating": 12,
+  "Champions / champions by role and rating": 65,
+  "Game / champions by base stat": 53,
+  "Game / champions by RP price": 4,
+  "Lore / champions by release month": 12,
+  "Champions / champions by role and damage type": 9,
+  "Lore / champions by region and damage type": 10,
+  "Lore / champions by bio mention": 9,
+  "Lore / champions by bio word": 6,
+  "Cosmetics / champions by skin rarity": 4,
+  "Cosmetics / champions by skin rarity and role": 16,
+  "Cosmetics / champions by skin price": 4,
+  "Cosmetics / champions by skin price and role": 28,
+  "Cosmetics / champions by skin year and role": 97,
+  "Cosmetics / skin lines per champion": 129,
+  "Cosmetics / skins per champion": 127,
+  "Music / curated music": 2,
   "Game / items by stat": 12,
   "Game / items by stat and tier": 17,
   "Game / items by component": 20,
@@ -86,5 +105,5 @@
   "Pro Play / curated": 2,
   "Cosmetics / curated": 1
  },
- "lowConfidence": 66
+ "lowConfidence": 324
 }

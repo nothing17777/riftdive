@@ -2,6 +2,7 @@
 // Champion rarity comes from the blended familiarity prior (LLM rating + ranked pick volume);
 // item rarity is a weak proxy (marked low confidence, lc:1).
 import { build, norm } from '../lib/question.mjs';
+import { addExtra } from './extra.mjs';
 
 const FACTION = {
   ionia: 'Ionia', shurima: 'Shurima', noxus: 'Noxus', freljord: 'the Freljord', 'mount-targon': 'Mount Targon', void: 'the Void', zaun: 'Zaun',
@@ -95,6 +96,8 @@ export function generateGame({ champions, items, fame }) {
     q('champions by skin line', `skinline.${norm(set)}`, 'Cosmetics', `Name a champion who has a skin in the ${set} line`, cs, 8, 80);
     for (const [r, rl] of [['MAGE', 'Mage'], ['ASSASSIN', 'Assassin'], ['FIGHTER', 'Fighter'], ['SUPPORT', 'Support'], ['MARKSMAN', 'Marksman'], ['TANK', 'Tank']]) q('skin line by role', `skinline.${norm(set)}.${r}`, 'Cosmetics', `Name a ${rl} who has a skin in the ${set} line`, cs.filter(c => (c.roles || []).includes(r)), 8);
   }
+
+  addExtra({ q, where, list, FACTION, push });
 
   // ---- Items (low confidence: proxy rarity)
   const buy = Object.values(items).filter(i => i.shop?.purchasable && !i.removed && i.name && (i.shop?.prices?.total ?? 0) > 0);
