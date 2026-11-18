@@ -173,3 +173,24 @@ export function generatePro({ players, teams, years }, { fame = {} } = {}) {
   X('teams by league', 'tmByL', lg => `Name a team that has played ${PLACE[lg]}`, tmE, () => ({ min: 10, pop: 60 }));
   return { questions: out, stat, rows: players.length, years: [minY, maxY] };
 }
+
+// Keep only questions a fan could reasonably attempt: major leagues, and well-known players/teams in the question itself.
+// Works on the normalised tokens in the question id (answers may still be obscure; the question's subject may not).
+export function fanFilter({ players }, { topPlayers = 130, topTeams = 55 } = {}) {
+  const MAJOR = new Set(Object.keys(LEAGUE_FACTOR).filter(k => LEAGUE_FACTOR[k] === 1));
+  const pg = new Map(), tg = new Map(), allPl = new Set(), allTm = new Set();
+  for (const r of players) { allPl.add(norm(r.pl)); allTm.add(norm(r.team)); if (MAJOR.has(r.lg)) { pg.set(r.pl, (pg.get(r.pl) || 0) + 1); tg.set(r.team, (tg.get(r.team) || 0) + 1); } }
+  const top = (m, n) => new Set([...m].sort((a, b) => b[1] - a[1]).slice(0, n).map(x => norm(x[0])));
+  const famPl = top(pg, topPlayers), famTm = top(tg, topTeams);
+  const minor = new Set(Object.keys(PLACE).filter(k => !MAJOR.has(k)).map(norm));
+  return q => {
+    if (!q.id.startsWith('pro.') && !q.id.startsWith('u.')) return true;
+    for (const t of q.id.split('.').slice(2)) {
+      if (minor.has(t)) return false;
+      if (/^(rounds?\d|split\d|lockin|cup|stage|group|opening|closing|promotion|relegation|knockout|regional|qualifier|play(in|offs?)\d)/.test(t)) return false; // odd split names nobody recognises
+      if (allPl.has(t) && !famPl.has(t)) return false;
+      if (allTm.has(t) && !famTm.has(t)) return false;
+    }
+    return true;
+  };
+}

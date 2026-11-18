@@ -1,7 +1,7 @@
 // Usage: node tools/build-pool.mjs <oeRawDir> <merakiDir> [outDir=public/q]
 // Generates every question, merges the curated bank, de-duplicates, and writes sharded JSON.
 import { mkdir, writeFile, rm, readFile } from 'node:fs/promises';
-import { loadRows, generatePro } from './gen/pro.mjs';
+import { loadRows, generatePro, fanFilter } from './gen/pro.mjs';
 import { generateGame } from './gen/game.mjs';
 import { generateUnique } from './gen/unique.mjs';
 import { generateCombos } from './gen/combo.mjs';
@@ -28,7 +28,8 @@ const curated = POOL.map(p => {
 });
 
 const all = [], ids = new Set(), texts = new Set(), dropped = { dupId: 0, dupText: 0 };
-for (const q of [...pro.questions, ...uniq.questions, ...game.questions, ...combos.questions, ...generateCurated().questions, ...curated]) {
+const fan = fanFilter(rows);
+for (const q of [...pro.questions.filter(fan), ...uniq.questions.filter(fan), ...game.questions, ...combos.questions, ...generateCurated().questions, ...curated]) {
   const tk = norm(q.t);
   if (ids.has(q.id)) { dropped.dupId++; continue; }
   if (texts.has(tk)) { dropped.dupText++; continue; }

@@ -9,7 +9,7 @@ const LANES = { TOP: 'Top lane', JUNGLE: 'Jungle', MIDDLE: 'Mid lane', BOTTOM: '
 const LV = { 1: 'Low', 2: 'Moderate', 3: 'High' };
 const RATING = { damage: 'damage', toughness: 'toughness', control: 'crowd control', mobility: 'mobility', utility: 'utility' };
 const FACTION = { ionia: 'Ionia', shurima: 'Shurima', noxus: 'Noxus', freljord: 'the Freljord', 'mount-targon': 'Mount Targon', void: 'the Void', zaun: 'Zaun', piltover: 'Piltover', 'bandle-city': 'Bandle City', 'shadow-isles': 'the Shadow Isles', demacia: 'Demacia', bilgewater: 'Bilgewater', ixtal: 'Ixtal' };
-const KIT = {
+const KIT_ALL = {
   stun: ['a stun', /\bstun/], slow: ['a slow', /\bslow/], knockup: ['a knock up', /knock(s|ed|ing)? (\w+ )?up|airborne/], root: ['a root', /\broot|\bsnare/], silence: ['a silence', /\bsilenc/],
   taunt: ['a taunt', /\btaunt/], fear: ['a fear', /\bfear|\bflee/], charm: ['a charm', /\bcharm/], suppress: ['a suppression', /\bsuppress/], shield: ['a shield', /\bshield/],
   heal: ['healing', /\bheal/], stealth: ['stealth', /stealth|invisib|camouflage/], dash: ['a dash', /\bdash/], blink: ['a blink or teleport', /\bblink|\bteleport/],
@@ -19,6 +19,9 @@ const KIT = {
   charges: ['charges', /\bcharges?\b/], execthreshold: ['a health threshold', /below \d+% (of )?(their |his |her |its )?(max(imum)? )?health|missing health/], slowimmune: ['unstoppable or immune effects', /unstoppable|immune|invulnerab|untargetable/], pet: ['a pet or minion', /\bpet\b|\bminions?\b|\bturret/], lifesteal: ['lifesteal or omnivamp', /life ?steal|omnivamp|spell vamp/], mrshred: ['penetration or shred', /penetrat|shred|reduces? (the )?(armor|magic resist)/], ghost: ['ghosting or movement speed', /ghost|movement speed/], recall: ['a recall or return', /\breturns? to\b|\brecall/], decay: ['decay or death', /\bdeath\b|\bdie\b|\bdies\b/],
   global: ['a global range', /\bglobal|anywhere on the map|across the map/], summon: ['a summon', /\bsummon|\bclone/], transform: ['a transformation', /\btransform/],
 };
+
+const DROP = new Set(['channel', 'recast', 'stacks', 'mark', 'toggle', 'stance', 'charges', 'execthreshold', 'slowimmune', 'pet', 'lifesteal', 'mrshred', 'ghost', 'recall', 'decay', 'terrain', 'cleanse', 'reveal', 'global', 'summon', 'transform', 'blind', 'truedmg']);
+const KIT = Object.fromEntries(Object.entries(KIT_ALL).filter(([k]) => !DROP.has(k))); // keep mechanics a fan would recognise
 
 // ---- engine -------------------------------------------------------------------------------------------------
 const bit = i => 1n << BigInt(i);
@@ -50,6 +53,13 @@ function enumerate(count, dims, { maxClauses, min, max }) {
 }
 const joinClauses = parts => (parts.length < 2 ? parts.join('') : parts.slice(0, -1).join(', ') + ' and ' + parts.at(-1));
 
+const famousLines = list => {
+  const m = new Map();
+  for (const c of list) for (const sk of c.skins || []) if (!sk.isBase) for (const l of sk.set || []) if (l && l !== 'Legacy') (m.get(l) || m.set(l, new Set()).get(l)).add(c.name);
+  return [...m].filter(([, v]) => v.size >= 10).map(([l]) => l);
+};
+const hasSkin = (c, f) => (c.skins || []).some(sk => !sk.isBase && f(sk));
+
 // ---- champions -------------------------------------------------------------------------------------------------
 function champDims(list) {
   const year = c => +(c.releaseDate || '0').slice(0, 4);
@@ -70,8 +80,7 @@ function champDims(list) {
   for (const [k, kl] of Object.entries(RATING)) dim('rate.' + k, [1, 3].map(l => ({ key: `rate.${k}.${l}`, clause: `with a ${LV[l]} ${kl} rating`, test: i => list[i].attributeRatings?.[k] === l })));
   const eras = [[2009, 2010], [2011, 2012], [2013, 2014], [2015, 2016], [2017, 2018], [2019, 2020], [2021, 2022], [2023, 2025], [2009, 2011], [2012, 2015], [2016, 2019], [2020, 2025]];
   dim('release', [...Array.from({ length: 17 }, (_, k) => [2009 + k, 2009 + k]), ...eras].map(([a, b]) => ({ key: `rel.${a}.${b}`, clause: a === b ? `released in ${a}` : `released between ${a} and ${b}`, test: i => year(list[i]) >= a && year(list[i]) <= b })));
-  for (const [k, label, g, ok] of [['hp', 'health', stat('health')], ['hpreg', 'health regeneration', stat('healthRegen')], ['mana', 'mana', stat('mana'), c => (c.stats?.mana?.flat || 0) > 0], ['armor', 'armor', stat('armor')], ['mr', 'magic resistance', stat('magicResistance')],
-    ['ad', 'attack damage', stat('attackDamage')], ['as', 'attack speed', stat('attackSpeed')], ['ms', 'movement speed', stat('movespeed')], ['range', 'attack range', stat('attackRange')], ['hplvl', 'health growth', stat('health', 'perLevel')]]) {
+  for (const [k, label, g, ok] of [['ms', 'movement speed', stat('movespeed')], ['range', 'attack range', stat('attackRange')]]) {
     const pool = list.filter(c => !ok || ok(c)), poolIdx = new Set(pool.map(c => list.indexOf(c)));
     const hiT = pct(g, 0.3, true), loT = pct(g, 0.3, false);
     dim('stat.' + k, [['high', hiT], ['low', loT]].map(([w, t]) => ({ key: `stat.${k}.${w}`, clause: `with ${w} base ${label}`, test: i => poolIdx.has(i) && t(list[i]) })));
@@ -80,15 +89,15 @@ function champDims(list) {
   dim('ult', [['auto', 'is auto-targeted'], ['location', 'is aimed at a location'], ['direction', 'is a directional skillshot'], ['unit', 'targets a unit']].map(([k, l]) => ({ key: 'ult.' + k, clause: `whose ultimate ${l}`, test: i => new RegExp(k, 'i').test(R(list[i]).targeting || '') })));
   dim('ultdmg', [['MAGIC_DAMAGE', 'magic'], ['PHYSICAL_DAMAGE', 'physical'], ['TRUE_DAMAGE', 'true']].map(([k, l]) => ({ key: 'ultdmg.' + k, clause: `whose ultimate deals ${l} damage`, test: i => R(list[i]).damageType === k })));
   dim('ultally', [{ key: 'ultally', clause: 'whose ultimate can affect allies', test: i => /ally|allies/i.test(R(list[i]).affects || '') }]);
-  dim('qshape', [['direction', 'is a directional skillshot'], ['unit', 'targets a unit'], ['auto', 'is auto-targeted']].map(([k, l]) => ({ key: 'q.' + k, clause: `whose Q ${l}`, test: i => new RegExp(k, 'i').test(Q(list[i]).targeting || '') })));
-  const cd = (c, slot) => c.abilities?.[slot]?.[0]?.cooldown?.modifiers?.[0]?.values?.[0];
-  dim('ultcd', [['at most 80 seconds', v => v <= 80], ['at least 120 seconds', v => v >= 120]].map(([l, f], k) => ({ key: 'ultcd.' + k, clause: `whose ultimate has a base cooldown of ${l}`, test: i => Number.isFinite(cd(list[i], 'R')) && f(cd(list[i], 'R')) })));
-  dim('qcd', [['at most 6 seconds', v => v <= 6], ['at least 10 seconds', v => v >= 10]].map(([l, f], k) => ({ key: 'qcd.' + k, clause: `whose Q has a base cooldown of ${l}`, test: i => Number.isFinite(cd(list[i], 'Q')) && f(cd(list[i], 'Q')) })));
   dim('skins', [[12, 'at least 12 skins'], [18, 'at least 18 skins']].map(([n, l]) => ({ key: 'skins.' + n, clause: `with ${l}`, test: i => (list[i].skins || []).length > n })));
   dim('skinfew', [{ key: 'skins.few', clause: 'with at most 6 skins', test: i => (list[i].skins || []).length <= 6 }]);
-  dim('price', [450, 790, 880, 585, 260].map(p => ({ key: 'rp.' + p, clause: `that costs ${p} RP`, test: i => list[i].price?.rp === p })));
   dim('first', 'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => ({ key: 'first.' + ch, clause: `whose name starts with ${ch.toUpperCase()}`, test: i => (list[i].name.replace(/[^A-Za-z]/g, '')[0] || '').toLowerCase() === ch })));
+  dim('last', 'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => ({ key: 'last.' + ch, clause: `whose name ends with ${ch.toUpperCase()}`, test: i => (list[i].name.replace(/[^A-Za-z]/g, '').slice(-1) || '').toLowerCase() === ch })));
+  dim('len', [[3, 4], [5, 5], [6, 6], [7, 7], [8, 9], [10, 20]].map(([a, b]) => ({ key: `len.${a}.${b}`, clause: a === b ? `whose name has ${a} letters` : `whose name has ${a} to ${b} letters`, test: i => { const n = list[i].name.replace(/[^A-Za-z]/g, '').length; return n >= a && n <= b; } })));
   dim('name', [{ key: 'name.space', clause: 'whose name has more than one word', test: i => /\s/.test(list[i].name) }, { key: 'name.apos', clause: 'whose name has an apostrophe', test: i => /'/.test(list[i].name) }]);
+  for (const l of famousLines(list)) void l;
+  dim('line', famousLines(list).map(l => ({ key: 'line.' + l, clause: `who has a skin in the ${l} line`, test: i => hasSkin(list[i], sk => (sk.set || []).includes(l)) })));
+  dim('skinrar', ['Legendary', 'Epic', 'Ultimate', 'Mythic'].map(r => ({ key: 'skinrar.' + r, clause: `who has ${r === 'Epic' || r === 'Ultimate' ? 'an' : 'a'} ${r} skin`, test: i => hasSkin(list[i], sk => sk.rarity === r) })));
   dim('title', [{ key: 'title.the', clause: 'whose title starts with "the"', test: i => /^the /i.test(list[i].title || '') }]);
   return D;
 }
@@ -115,15 +124,12 @@ function skinEntities(list) {
 }
 function skinDims(ents, lineSize) {
   const D = [];
-  const lines = [...lineSize].filter(([, s]) => s.size >= 7).map(([l]) => l);
+  const lines = [...lineSize].filter(([, s]) => s.size >= 12).map(([l]) => l); // only lines a fan would know
   D.push({ id: 'line', values: lines.map(l => ({ key: 'line.' + l, clause: `in the ${l} line`, test: i => ents[i].line === l })) });
   D.push({ id: 'rarity', values: ['Legendary', 'Mythic', 'Epic', 'Ultimate', 'NoRarity'].map(r => ({ key: 'r.' + r, adj: r === 'NoRarity' ? 'standard' : r, test: i => ents[i].s.rarity === r })) });
-  D.push({ id: 'year', values: [...Array.from({ length: 17 }, (_, k) => [2009 + k, 2009 + k]), [2009, 2012], [2013, 2016], [2017, 2020], [2021, 2025]].map(([a, b]) => ({ key: `y.${a}.${b}`, clause: a === b ? `released in ${a}` : `released between ${a} and ${b}`, test: i => ents[i].year >= a && ents[i].year <= b })) });
-  D.push({ id: 'cost', values: [520, 750, 975, 1350, 1820].map(p => ({ key: 'cost.' + p, clause: `costing ${p} RP`, test: i => ents[i].s.cost === p })) });
   D.push({ id: 'role', values: Object.entries(MAIN_ROLES).map(([k, l]) => ({ key: 'role.' + k, clause: `for a ${l}`, test: i => (ents[i].c.roles || []).includes(k) })) });
   D.push({ id: 'range', values: [['MELEE', 'melee'], ['RANGED', 'ranged']].map(([k, l]) => ({ key: 'atk.' + k, clause: `for a ${l} champion`, test: i => ents[i].c.attackType === k })) });
   D.push({ id: 'faction', values: Object.entries(FACTION).map(([k, l]) => ({ key: 'f.' + k, clause: `for a champion from ${l}`, test: i => ents[i].c.faction === k })) });
-  D.push({ id: 'first', values: 'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => ({ key: 'first.' + ch, clause: `starting with the letter ${ch.toUpperCase()}`, test: i => ents[i].name[0].toLowerCase() === ch })) });
   return D;
 }
 const composeSkin = cl => { const adj = cl.find(c => c.v.adj)?.v.adj; const rest = cl.filter(c => c.v.clause).map(c => c.v.clause); return `Name a${adj ? ' ' + adj : ''} skin${rest.length ? ' ' + joinClauses(rest) : ''}`; };
@@ -134,14 +140,12 @@ function itemDims(items, byId) {
   const D = [];
   D.push({ id: 'rank', values: [['LEGENDARY', 'a Legendary'], ['EPIC', 'an Epic'], ['BASIC', 'a Basic'], ['BOOTS', 'a Boots'], ['STARTER', 'a starter'], ['CONSUMABLE', 'a consumable']].map(([k, l]) => ({ key: 'rank.' + k, adj: l, test: i => (items[i].rank || []).includes(k) })) });
   for (const [k, l] of Object.entries(STAT)) D.push({ id: 'stat.' + k, values: [{ key: 'stat.' + k, clause: `that gives ${l}`, test: i => !!(items[i].stats?.[k] && (items[i].stats[k].flat || items[i].stats[k].percent)) }] });
-  D.push({ id: 'price', values: [[0, 700], [701, 1200], [1201, 2000], [2001, 2800], [2801, 3200], [3201, 5000], [0, 1000], [2500, 5000]].map(([a, b]) => ({ key: `p.${a}.${b}`, clause: `that costs between ${a} and ${b} gold`, test: i => items[i].shop.prices.total >= a && items[i].shop.prices.total <= b })) });
   const comps = new Set(items.flatMap(i => i.buildsFrom || []));
   D.push({ id: 'from', values: [...comps].filter(id => byId[id] && items.filter(i => (i.buildsFrom || []).includes(id)).length >= 7).map(id => ({ key: 'from.' + id, clause: `that builds from ${byId[id].name}`, test: i => (items[i].buildsFrom || []).includes(id) })) });
   const itext = items.map(i => JSON.stringify([i.passives, i.active, i.simpleDescription]).toLowerCase());
   for (const [k, l, re] of [['onhit', 'on-hit', /on-hit/], ['shield', 'a shield', /\bshield/], ['slow', 'a slow', /\bslow/], ['burn', 'burn damage', /\bburn/], ['heal', 'healing', /\bheal/], ['stasis', 'stasis', /stasis/], ['ward', 'wards or vision', /\bward|vision|reveal/], ['tp', 'a teleport', /teleport/], ['dash', 'a dash', /\bdash|\bblink/], ['knock', 'a knockback or knock up', /knock/], ['stun', 'a stun', /\bstun/], ['execute', 'an execute', /\bexecut|below \d+%/], ['crit', 'critical strikes', /critical/], ['mana', 'mana restoration', /restores? .*mana|\bmana\b/], ['dr', 'damage reduction', /damage reduction|reduce[sd]? damage/], ['stack', 'stacks', /\bstacks?\b/], ['sheen', 'an empowered attack', /empower|spellblade|next basic attack/], ['revive', 'a revive', /revive|resurrect/]]) D.push({ id: 'text.' + k, values: [{ key: 'text.' + k, clause: `whose effects mention ${l}`, test: i => re.test(itext[i]) }] });
   D.push({ id: 'active', values: [{ key: 'active', clause: 'with an active ability', test: i => (items[i].active || []).length > 0 }, { key: 'passive', clause: 'with a passive effect', test: i => (items[i].passives || []).length > 0 }] });
   D.push({ id: 'into', values: [{ key: 'into0', clause: 'that does not build into anything', test: i => !(items[i].buildsInto || []).length }, { key: 'into3', clause: 'that builds into 3 or more items', test: i => (items[i].buildsInto || []).length >= 3 }] });
-  D.push({ id: 'first', values: 'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => ({ key: 'first.' + ch, clause: `whose name starts with ${ch.toUpperCase()}`, test: i => (items[i].name.replace(/[^A-Za-z]/g, '')[0] || '').toLowerCase() === ch })) });
   return D;
 }
 const composeItem = cl => { const adj = cl.find(c => c.v.adj)?.v.adj; const rest = cl.filter(c => c.v.clause).map(c => c.v.clause); return `Name ${adj || 'an'} item${rest.length ? ' ' + joinClauses(rest) : ''}`; };
@@ -167,21 +171,16 @@ function abilityDims(E) {
   for (const [k, [label, re]] of Object.entries(KIT)) D.push({ id: 'kit.' + k, values: [{ key: 'kit.' + k, clause: `that mentions ${label}`, test: i => re.test(E[i].text) }] });
   D.push({ id: 'dmg', values: [['MAGIC_DAMAGE', 'magic'], ['PHYSICAL_DAMAGE', 'physical'], ['TRUE_DAMAGE', 'true']].map(([k, l]) => ({ key: 'dmg.' + k, clause: `that deals ${l} damage`, test: i => E[i].a.damageType === k })) });
   D.push({ id: 'target', values: [['auto', 'is auto-targeted'], ['location', 'is aimed at a location'], ['direction', 'is a directional skillshot'], ['unit', 'targets a unit']].map(([k, l]) => ({ key: 'tg.' + k, clause: `that ${l}`, test: i => new RegExp(k, 'i').test(E[i].a.targeting || '') })) });
-  D.push({ id: 'cd', values: [['at most 5 seconds', v => v <= 5], ['at most 10 seconds', v => v <= 10], ['at least 20 seconds', v => v >= 20], ['at least 60 seconds', v => v >= 60], ['at least 100 seconds', v => v >= 100]].map(([l, f], k) => ({ key: 'cd.' + k, clause: `with a base cooldown of ${l}`, test: i => Number.isFinite(E[i].cd) && f(E[i].cd) })) });
   D.push({ id: 'role', values: Object.entries(MAIN_ROLES).map(([k, l]) => ({ key: 'role.' + k, clause: `belonging to a ${l}`, test: i => (E[i].c.roles || []).includes(k) })) });
   D.push({ id: 'range', values: [['MELEE', 'melee'], ['RANGED', 'ranged']].map(([k, l]) => ({ key: 'atk.' + k, clause: `of a ${l} champion`, test: i => E[i].c.attackType === k })) });
   D.push({ id: 'faction', values: Object.entries(FACTION).map(([k, l]) => ({ key: 'fac.' + k, clause: `of a champion from ${l}`, test: i => E[i].c.faction === k })) });
-  D.push({ id: 'era', values: [[2009, 2011], [2012, 2014], [2015, 2017], [2018, 2020], [2021, 2023], [2024, 2025]].map(([a, b]) => ({ key: `era.${a}`, clause: `of a champion released between ${a} and ${b}`, test: i => year(E[i].c) >= a && year(E[i].c) <= b })) });
   D.push({ id: 'resource', values: [['MANA', 'uses Mana'], ['ENERGY', 'uses Energy'], ['NONE', 'has no resource bar']].map(([k, l]) => ({ key: 'res.' + k, clause: `of a champion who ${l}`, test: i => E[i].c.resource === k })) });
-  const words = {}; E.forEach(e => new Set(e.name.toLowerCase().match(/[a-z]{4,}/g) || []).forEach(w => (words[w] ||= []).push(1)));
-  D.push({ id: 'word', values: Object.entries(words).filter(([, v]) => v.length >= 7).map(([w]) => ({ key: 'w.' + w, clause: `with "${w[0].toUpperCase() + w.slice(1)}" in its name`, test: i => new RegExp('\\b' + w + '\\b', 'i').test(E[i].name) })) });
-  D.push({ id: 'first', values: 'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => ({ key: 'first.' + ch, clause: `whose name starts with ${ch.toUpperCase()}`, test: i => (E[i].name.replace(/[^A-Za-z]/g, '')[0] || '').toLowerCase() === ch })) });
   return D;
 }
 const composeAbility = cl => { const slot = cl.find(c => c.v.slot)?.v.slot; const rest = cl.filter(c => c.v.clause).map(c => c.v.clause); return `Name ${slot || 'an ability'}${slot ? '' : ''}${rest.length ? ' ' + joinClauses(rest) : ''}`; };
 
 // ---- entry point -------------------------------------------------------------------------------------------------
-export function generateCombos({ champions, items, fame, caps = { champ: 40000, skin: 12000, item: 5000 } }) {
+export function generateCombos({ champions, items, fame, caps = { champ: 60000, skin: 20000, item: 8000 } }) {
   const out = [], stat = {};
   const emit = (family, category, idPrefix, found, ents, compose, fameOf, aliasesOf, opts) => {
     const ranked = found.map(f => ({ f, h: hash(idPrefix + f.idx.join(',')) })).sort((a, b) => a.h - b.h).slice(0, opts.cap);
@@ -191,6 +190,7 @@ export function generateCombos({ champions, items, fame, caps = { champ: 40000, 
       const id = `${idPrefix}.${f.cl.map(c => c.v.key).join('+')}`;
       const avg = f.idx.reduce((s, i) => s + fameOf(i), 0) / f.idx.length;
       const cat = opts.lore && f.cl.some(c => /^(fac|rel|era)\./.test(c.v.key)) ? 'Lore' : category;
+      if (opts.guard && Math.max(...entries.map(e => e.fame)) < opts.guard) continue; // nobody casual could name any of these
       const r = build({ id, category: cat, subtype: family, text, entries, mode: 'fame', min: 7, max: opts.max, pop: Math.round(Math.min(100, 100 * avg + 10)) });
       if (r) { if (opts.lc) r.lc = 1; out.push(r); stat[family] = (stat[family] || 0) + 1; }
     }
@@ -207,17 +207,17 @@ export function generateCombos({ champions, items, fame, caps = { champ: 40000, 
   // skins
   const { ents: sk, lineSize } = skinEntities(list);
   const skFound = enumerate(sk.length, skinDims(sk, lineSize), { maxClauses: 3, min: 7, max: 150 });
-  emit('skin attribute combos', 'Cosmetics', 'x.s', skFound, sk, composeSkin, i => sk[i].fame, null, { cap: caps.skin, max: 150, lc: true });
+  emit('skin attribute combos', 'Cosmetics', 'x.s', skFound, sk, composeSkin, i => sk[i].fame, null, { cap: caps.skin, max: 150, lc: true, guard: 0.6 });
   // abilities (answers are ability names; "Ahri R" style aliases)
   const ab = abilityEntities(list, pct);
   const abFound = enumerate(ab.length, abilityDims(ab), { maxClauses: 3, min: 7, max: 90 });
-  emit('ability attribute combos', 'Game', 'x.a', abFound, ab, composeAbility, i => ab[i].fame, i => [`${ab[i].c.name} ${ab[i].slot}`, `${ab[i].c.name} ${SLOT[ab[i].slot]?.[0] || ab[i].slot}`], { cap: caps.ability ?? 25000, max: 90, lc: true, lore: true });
+  emit('ability attribute combos', 'Game', 'x.a', abFound, ab, composeAbility, i => ab[i].fame, i => [`${ab[i].c.name} ${ab[i].slot}`, `${ab[i].c.name} ${SLOT[ab[i].slot]?.[0] || ab[i].slot}`], { cap: caps.ability ?? 40000, max: 90, lc: true, lore: true, guard: 0.6 });
   // items
   const buy = Object.values(items).filter(i => i.shop?.purchasable && !i.removed && i.name && (i.shop?.prices?.total ?? 0) > 0);
   const byId = Object.fromEntries(Object.values(items).map(i => [i.id, i]));
   const prox = i => 2 * Math.log1p((i.buildsInto || []).length) + Math.log1p(i.shop.prices.total) / 2 + ((i.nicknames || []).length ? 1 : 0);
   const ps = buy.map(prox).sort((a, b) => a - b), ipct = i => ps.filter(s => s < prox(i)).length / (ps.length - 1);
   const itFound = enumerate(buy.length, itemDims(buy, byId), { maxClauses: 3, min: 7, max: 90 });
-  emit('item attribute combos', 'Game', 'x.i', itFound, buy.map(i => ({ name: i.name })), composeItem, i => ipct(buy[i]), i => buy[i].nicknames || [], { cap: caps.item, max: 90, lc: true });
+  emit('item attribute combos', 'Game', 'x.i', itFound, buy.map(i => ({ name: i.name })), composeItem, i => ipct(buy[i]), i => buy[i].nicknames || [], { cap: caps.item, max: 90, lc: true, guard: 0.6 });
   return { questions: out, stat };
 }
