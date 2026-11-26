@@ -44,8 +44,10 @@ async function handle(path, url, init) {
   if (method !== 'POST') return fail('Unknown endpoint.', 404);
   if (path === 'start') {
     const mode = data.practice === true ? 'practice' : 'daily';
+    const runDate = mode === 'practice' ? `${date}~${crypto.randomUUID().slice(0, 8)}` : date; // practice dives get their own random prompts
+    await ensure(runDate);
     let r = mode === 'daily' ? Object.values(db.runs).find(x => x.date === date && x.mode === 'daily') : null;
-    if (!r) { r = { id: crypto.randomUUID(), date, mode, round_start: Date.now() + PREVIEW_MS, next_round: 0, completed: 0, paused_at: null }; db.runs[r.id] = r; save(); }
+    if (!r) { r = { id: crypto.randomUUID(), date: runDate, mode, round_start: Date.now() + PREVIEW_MS, next_round: 0, completed: 0, paused_at: null }; db.runs[r.id] = r; save(); }
     return json(state(r));
   }
   if (path === 'feedback') return json({ ok: true });
