@@ -1,11 +1,11 @@
 {
- "total": 328,
+ "total": 329,
  "categories": {
   "Pro Play": 208,
   "Champions": 33,
   "Lore": 17,
   "Cosmetics": 31,
-  "Game": 35,
+  "Game": 36,
   "Music": 4
  },
  "dropped": {
@@ -56,7 +56,7 @@
   "Cosmetics / champions by skin count": 2,
   "Cosmetics / champions by skin rarity": 2,
   "Cosmetics / champions by skin line": 25,
-  "Game / items by stat": 13,
+  "Game / items by stat": 14,
   "Game / items by price": 2,
   "Game / items by class": 4,
   "Game / items by component": 7,

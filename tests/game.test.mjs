@@ -137,6 +137,11 @@ test('rejections explain themselves: real name that does not fit vs not recognis
   const state=await s.call('/api/state?run='+id);assert.ok(state.body.prompts.every(p=>typeof p.category==='string'));
   s.env.DB.close();
 });
+test('item questions accept mode items and stats granted by an effect',async()=>{
+  const q=(await getJson(`q/s${shardOf('i.stat.attackSpeed')}.json`))['i.stat.attackSpeed'],names=q.a.map(a=>a[0]);
+  for(const n of ['Sword of Blossoming Dawn','Lich Bane','Fulmination'])assert.ok(names.includes(n),n);
+  assert.ok(!names.includes('Frozen Heart'),'slowing enemy attack speed does not give it');
+});
 test('suggestions come from the global dictionary and never leak by prompt',async()=>{
   const{buildDictionary,suggest,explainMiss}=await import('../public/entities.mjs');const d=buildDictionary(await getJson('q/entities.json'));
   assert.ok(d.names.length>1500);assert.deepEqual(suggest(d,'ga'),[]);assert.deepEqual(suggest(d,'gar').filter(n=>n.length>5),[]);assert.ok(suggest(d,'gare').includes('Garen'));assert.ok(suggest(d,'a').length===0&&suggest(d,'jinx').length<=3);

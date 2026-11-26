@@ -23,6 +23,20 @@ const ALIAS = {
 const STAT = { abilityPower: 'Ability Power', attackDamage: 'Attack Damage', armor: 'Armor', magicResistance: 'Magic Resist', attackSpeed: 'Attack Speed', criticalStrikeChance: 'Critical Strike Chance', health: 'Health', mana: 'Mana',
   abilityHaste: 'Ability Haste', movespeed: 'Movement Speed', lifesteal: 'Life Steal', lethality: 'Lethality', magicPenetration: 'Magic Penetration', armorPenetration: 'Armor Penetration' };
 
+// Stats an item only grants through its passive or active, which the base stats do not list. Reviewed by hand
+// against the effect text; check this list when new items ship.
+const ALL_ROUND = ['abilityPower', 'attackDamage', 'armor', 'magicResistance', 'attackSpeed', 'health'];
+const GRANTED = {
+  'Sword of Blossoming Dawn': ['attackSpeed'], 'Lich Bane': ['attackSpeed'], 'Ardent Censer': ['attackSpeed'], Bandlepipes: ['attackSpeed', 'movespeed'], "Sterak's Gage": ['attackDamage'],
+  Terminus: ['armor', 'magicResistance', 'armorPenetration', 'magicPenetration'], "Demon King's Crown": ALL_ROUND, 'Twin Mask': ALL_ROUND, Dragonheart: ALL_ROUND,
+  "Twilight's Edge": ['abilityPower', 'attackDamage', 'attackSpeed', 'abilityHaste'], 'Endless Hunger': ['abilityHaste'], 'Spear of Shojin': ['abilityHaste'], "Hemomancer's Helm": ['health'], Reverberation: ['health'],
+  Puppeteer: ['attackSpeed', 'movespeed'], 'Innervating Locket': ['abilityPower', 'movespeed'], 'Protoplasm Harness': ['movespeed'], "Mejai's Soulstealer": ['movespeed'], Phage: ['movespeed'], 'Black Cleaver': ['movespeed'],
+  'Experimental Hexplate': ['attackSpeed', 'movespeed'], 'Trinity Force': ['movespeed'], Stormrazor: ['movespeed'], 'Mercurial Scimitar': ['movespeed'], 'Solstice Sleigh': ['movespeed'], Stridebreaker: ['movespeed'],
+  Opportunity: ['movespeed'], "Guardian's Dirk": ['movespeed'], 'Night Harvester': ['movespeed'], 'Kinkou Jitte': ['movespeed'], "Pyromancer's Cloak": ['movespeed'],
+};
+// Turret and champion-only upgrades that the data lists as items.
+const NOT_ITEMS = id => (id >= 1500 && id < 1600) || [3400, 3901, 3902, 3903].includes(id);
+
 export function generateGame({ champions, items, fame }) {
   const out = [];
   const list = Object.values(champions).filter(c => c.name);
@@ -59,12 +73,16 @@ export function generateGame({ champions, items, fame }) {
   const prox = i => 2 * Math.log1p((i.buildsInto || []).length) + Math.log1p(i.shop.prices.total) / 2 + ((i.nicknames || []).length ? 1 : 0);
   const ps = buy.map(prox).sort((a, b) => a - b);
   const ipct = i => ps.filter(s => s < prox(i)).length / (ps.length - 1);
+  // Everything a player can hold, including ARAM and Arena items (often listed without a price), upgraded forms
+  // such as Muramana, and granted boots and consumables. Shop items come first so they keep their names and tiers.
+  const held = [...buy, ...Object.values(items).filter(i => i.name && !i.removed && !NOT_ITEMS(i.id) && !buy.includes(i)
+    && (i.shop?.purchasable || (i.shop?.prices?.total ?? 0) > 0 || (i.rank || []).some(r => r === 'BOOTS' || r === 'CONSUMABLE')))];
   const iq = (family, id, text, is, pop = 55) => { const r = build({ id: `i.${id}`, category: 'Game', subtype: family, text, entries: is.map(i => ({ name: i.name, fame: ipct(i), aliases: i.nicknames || [] })), mode: 'fame', min: 6, max: 500, pop }); if (r) out.push(r); };
-  const gives = (i, k) => i.stats?.[k] && Object.values(i.stats[k]).some(Boolean);
-  for (const [k, label] of Object.entries(STAT)) iq('items by stat', `stat.${k}`, `Name an item that gives ${label}`, buy.filter(i => gives(i, k)), 60);
+  const gives = (i, k) => Object.values(i.stats?.[k] || {}).some(Boolean) || !!GRANTED[i.name]?.includes(k);
+  for (const [k, label] of Object.entries(STAT)) iq('items by stat', `stat.${k}`, `Name an item that gives ${label}`, held.filter(i => gives(i, k)), 60);
   iq('items by price', 'cheap', 'Name an item that costs less than 1000 gold', buy.filter(i => i.shop.prices.total < 1000), 60);
   iq('items by price', 'expensive', 'Name an item that costs at least 3000 gold', buy.filter(i => i.shop.prices.total >= 3000));
-  for (const [rk, label] of [['BOOTS', 'a pair of boots'], ['STARTER', 'a starter item'], ['LEGENDARY', 'a Legendary item'], ['CONSUMABLE', 'a consumable']]) iq('items by class', `rank.${rk}`, `Name ${label}`, buy.filter(i => (i.rank || []).includes(rk)));
+  for (const [rk, label] of [['BOOTS', 'a pair of boots'], ['STARTER', 'a starter item'], ['LEGENDARY', 'a Legendary item'], ['CONSUMABLE', 'a consumable']]) iq('items by class', `rank.${rk}`, `Name ${label}`, held.filter(i => (i.rank || []).includes(rk)));
   const comps = {};
   for (const i of buy) for (const f of new Set(i.buildsFrom || [])) (comps[f] ||= []).push(i);
   for (const [id, is] of Object.entries(comps)) if (byId[id] && is.length >= 8 && (byId[id].shop?.prices?.total ?? 9999) <= 500) iq('items by component', `from.${id}`, `Name an item that builds from ${byId[id].name}`, is, 40);
