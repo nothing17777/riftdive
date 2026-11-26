@@ -103,7 +103,7 @@ test('docs are minimal, UTF-8 and not SPA HTML',async()=>{
 });
 
 test('question bank: index and shards agree, and every question is playable',async()=>{
-  const index=await getJson('q/index.json');assert.ok(index.n>=10000,'bank should hold at least 10,000 questions, has '+index.n);
+  const index=await getJson('q/index.json');assert.ok(index.n>=250,'bank should hold at least 250 questions, has '+index.n);
   assert.equal(index.q.length,index.n);const ids=new Set(index.q.map(r=>r[0]));assert.equal(ids.size,index.n);
   const shards={};let checked=0;
   for(const [id,cat] of index.q){const n=shardOf(id);shards[n]||=await getJson(`q/s${n}.json`);const q=shards[n][id];assert.ok(q,'missing '+id);assert.equal(q.c,cat);
@@ -139,6 +139,6 @@ test('rejections explain themselves: real name that does not fit vs not recognis
 });
 test('suggestions come from the global dictionary and never leak by prompt',async()=>{
   const{buildDictionary,suggest,explainMiss}=await import('../public/entities.mjs');const d=buildDictionary(await getJson('q/entities.json'));
-  assert.ok(d.names.length>3000);assert.ok(suggest(d,'ga').length>0);assert.deepEqual(suggest(d,'g'),[]);
-  assert.ok(suggest(d,'lee').some(n=>/lee/i.test(n)));assert.equal(explainMiss(d,'zzqx9').reason,'unknown');
+  assert.ok(d.names.length>1500);assert.deepEqual(suggest(d,'ga'),[]);assert.deepEqual(suggest(d,'gar').filter(n=>n.length>5),[]);assert.ok(suggest(d,'gare').includes('Garen'));assert.ok(suggest(d,'a').length===0&&suggest(d,'jinx').length<=3);
+  assert.ok(suggest(d,'lee s').includes('Lee Sin'));assert.equal(explainMiss(d,'zzqx9').reason,'unknown');
 });

@@ -1,10 +1,8 @@
 // Usage: node tools/build-pool.mjs <oeRawDir> <merakiDir> [outDir=public/q]
 // Generates every question, merges the curated bank, de-duplicates, and writes sharded JSON.
 import { mkdir, writeFile, rm, readFile } from 'node:fs/promises';
-import { loadRows, generatePro, fanFilter } from './gen/pro.mjs';
+import { loadRows, generatePro } from './gen/pro.mjs';
 import { generateGame } from './gen/game.mjs';
-import { generateUnique } from './gen/unique.mjs';
-import { generateCombos } from './gen/combo.mjs';
 import { generateCurated } from './gen/curated.mjs';
 import { POOL, tierFor } from '../src/content/bank.mjs';
 import { shardOf, SHARDS } from '../src/content/pool.mjs';
@@ -16,9 +14,7 @@ const j = async f => JSON.parse(await readFile(`${meraki}/${f}`, 'utf8'));
 
 const rows = await loadRows(raw);
 const pro = generatePro(rows, { fame });
-const uniq = generateUnique(rows, { fame });
 const game = generateGame({ champions: await j('meraki-champs.json'), items: await j('meraki-items.json'), fame });
-const combos = generateCombos({ champions: await j('meraki-champs.json'), items: await j('meraki-items.json'), fame });
 // Curated prompts (hand-written): kept where no generated question covers the same wording.
 const TIER = { plankton: 0, tooclever: 1, schooler: 2, rare: 3, deepcut: 4, krillion: 5 };
 const curated = POOL.map(p => {
@@ -28,8 +24,7 @@ const curated = POOL.map(p => {
 });
 
 const all = [], ids = new Set(), texts = new Set(), dropped = { dupId: 0, dupText: 0 };
-const fan = fanFilter(rows);
-for (const q of [...pro.questions.filter(fan), ...uniq.questions.filter(fan), ...game.questions, ...combos.questions, ...generateCurated().questions, ...curated]) {
+for (const q of [...pro.questions, ...game.questions, ...generateCurated().questions, ...curated]) {
   const tk = norm(q.t);
   if (ids.has(q.id)) { dropped.dupId++; continue; }
   if (texts.has(tk)) { dropped.dupText++; continue; }
@@ -48,7 +43,7 @@ for (const q of all) for (const [name, , ...aliases] of q.a) { freq.set(name, (f
 const entities = [...freq].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([name]) => [name, ...(aliasOf.get(name) || [])]);
 await writeFile(`${out}/entities.json`, JSON.stringify({ v: 1, n: entities.length, e: entities }));
 console.log('entities in dictionary:', entities.length);
-const report = { total: all.length, categories: cats, dropped, proYears: pro.years, families: fam, lowConfidence: all.filter(q => q.lc).length };
+const report = { total: all.length, categories: cats, dropped, proYears: rows.years, families: fam, lowConfidence: all.filter(q => q.lc).length };
 await mkdir('docs', { recursive: true }); await writeFile('docs/question-bank-report.json', JSON.stringify(report, null, 1) + '\n');
 console.log('TOTAL questions:', all.length, '| dropped:', JSON.stringify(dropped), '| low-confidence (items):', report.lowConfidence);
 console.log('by category:', JSON.stringify(cats));

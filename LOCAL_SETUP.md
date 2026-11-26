@@ -20,7 +20,8 @@ node tools/build-pool.mjs <oe-csv-folder> <folder-with-meraki-json> public/q
 ```
 
 ## Where things are
-- `tools/gen/pro.mjs`, `tools/gen/unique.mjs`, `tools/gen/game.mjs`: question generators (pro play, records/cross-league, champions/lore/items/skins)
+- `tools/gen/pro.mjs`, `tools/gen/game.mjs`, `tools/gen/curated.mjs`: question generators (pro play, champions/lore/items/skins, hand-written sets). Keep each question to one simple clause a player would know.
+- League title winners are hand-listed in `TITLES` in `tools/gen/pro.mjs`; add each new split there (and in the Worlds winners list in `src/content/bank.mjs`).
 - `tools/data/`: champion familiarity ratings (LLM) + ranked pick volume + blended prior
 - `src/content/pool.mjs`: daily selection from the pool; `public/entities.mjs`: dictionary + suggestions
 - `static/static-api.mjs`: in-browser API used by the GitHub Pages build
@@ -34,6 +35,8 @@ node tools/adapt.mjs counts.json public/q
 The prior counts as about 40 players (`tools/lib/adapt.mjs`). The static GitHub Pages build has no server, so it cannot collect counts.
 
 ## Known gaps
-- Pro Play is ~95% of the bank (about 21k questions, many about minor-league players); Music is tiny (6) and skin-name / item tiers are proxies (`lc:1`).
+- The bank is small (about 330 questions, ~200 of them pro play), so questions come back within weeks.
+- The pro data has no LCK before 2015 (and only a few 2015 games) and no LPL before mid-2016, so players who only played or won there earlier are not accepted.
+- Item tiers are proxies; Music is tiny.
 - Meraki data (champions/items) is a snapshot; regenerate when new champions ship.
 - Familiarity for items, players and teams is not LLM-rated yet.

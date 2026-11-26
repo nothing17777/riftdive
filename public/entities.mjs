@@ -37,15 +37,13 @@ export function missMessage(raw, e) {
   return 'type an answer first.';
 }
 
-// Suggestions as you type: whole-name prefix, then word prefix, then substring; typos only if nothing else matches.
-export function suggest(dict, input, limit = 6) {
-  const q = normalize(input); if (q.length < 2) return [];
-  const scored = [];
-  for (let i = 0; i < dict.names.length; i++) {
-    const n = dict.names[i]; let s = -1;
-    if (n.key.startsWith(q)) s = 0; else if (n.words.some(w => w.startsWith(q))) s = 1; else if (q.length >= 3 && n.key.includes(q)) s = 2;
-    if (s >= 0) scored.push([s, i, n.name]);
-  }
-  if (!scored.length && q.length >= 4) for (let i = 0; i < dict.names.length; i++) { const n = dict.names[i]; if (Math.abs(n.key.length - q.length) <= 1 && distance(q, n.key.slice(0, q.length + 1), 1) <= 1) scored.push([3, i, n.name]); }
-  return scored.sort((a, b) => a[0] - b[0] || a[1] - b[1]).slice(0, limit).map(x => x[2]);
+// Suggestions only finish a name you have mostly typed: they help with spelling without listing answers for you.
+// A name is offered once the input starts it (or one of its words) and covers most of its length.
+const TYPED_SHARE = 0.6;
+export function suggest(dict, input, limit = 3) {
+  const q = normalize(input); if (q.length < 3) return [];
+  return dict.names
+    .filter(n => q.length >= Math.ceil(n.key.length * TYPED_SHARE) && (n.key.startsWith(q) || n.words.some(w => w.startsWith(q))))
+    .sort((a, b) => Number(b.key.startsWith(q)) - Number(a.key.startsWith(q)) || a.key.length - b.key.length || a.name.localeCompare(b.name)) // never by how often a name is an answer
+    .slice(0, limit).map(n => n.name);
 }

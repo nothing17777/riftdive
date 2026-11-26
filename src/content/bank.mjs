@@ -77,7 +77,7 @@ export const POOL = [
   P('worlds-team', 'Pro Play', 'Name a team that has won the League of Legends World Championship', [
     ['T1', 100, 'skt', 'sk telecom t1', 'sktelecom t1', 'skt t1'], ['Fnatic', 30, 'fnc'], ['EDward Gaming', 22, 'edg'],
     ['Samsung Galaxy', 18, 'samsung'], ['DAMWON Gaming', 16, 'damwon', 'dwg', 'dwg kia', 'dplus kia'],
-    ['FunPlus Phoenix', 14, 'fpx'], ['Invictus Gaming', 12, 'ig'], ['DRX', 8], ['Samsung White', 5], ['Taipei Assassins', 4, 'tpa']]),
+    ['FunPlus Phoenix', 14, 'fpx'], ['Invictus Gaming', 12, 'ig'], ['DRX', 8], ['Samsung White', 5], ['Taipei Assassins', 4, 'tpa'], ['Bilibili Gaming', 12, 'blg']]),
   P('esports-region', 'Pro Play', 'Name a professional League of Legends league or region', [
     ['LCK', 100, 'korea'], ['LPL', 90, 'china'], ['LEC', 70, 'europe'], ['LCS', 65, 'north america', 'na'], ['CBLOL', 20, 'brazil'],
     ['LLA', 15, 'latin america'], ['PCS', 12], ['LJL', 10, 'japan'], ['VCS', 8, 'vietnam'], ['LCO', 5, 'oceania'],
